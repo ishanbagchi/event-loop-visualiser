@@ -1,4 +1,5 @@
 import { Header } from './components/Header'
+import { Footer } from './components/Footer'
 import { CodeEditor } from './components/CodeEditor'
 import { ExecutionControls } from './components/ExecutionControls'
 import { CallStack } from './components/CallStack'
@@ -43,44 +44,7 @@ function App() {
 			</main>
 
 			{/* Footer */}
-			<footer className="footer">
-				<div className="footer-content">
-					<div className="footer-links">
-						<a
-							href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="footer-link"
-						>
-							📚 Event Loop Guide
-						</a>
-						<span className="footer-separator">•</span>
-						<a
-							href="https://github.com/ishanbagchi/event-loop-visualiser"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="footer-link"
-						>
-							⭐ Star on GitHub
-						</a>
-						<span className="footer-separator">•</span>
-						<a
-							href="https://javascript.info/event-loop"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="footer-link"
-						>
-							📖 JavaScript.info
-						</a>
-					</div>
-					<div className="footer-credits">
-						<span>
-							Built with ❤️ to help developers understand
-							JavaScript internals
-						</span>
-					</div>
-				</div>
-			</footer>
+			<Footer />
 		</div>
 	)
 }

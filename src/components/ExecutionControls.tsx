@@ -21,23 +21,13 @@ export const ExecutionControls = () => {
 
 	return (
 		<div className="execution-controls">
-			<div
-				style={{
-					display: 'flex',
-					alignItems: 'center',
-					gap: '0.25rem',
-				}}
-			>
+			<div className="controls-buttons">
 				{!isRunning ? (
 					<Button
 						onClick={play}
 						size="sm"
 						disabled={isComplete || !hasSteps}
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: '0.25rem',
-						}}
+						className="control-btn control-btn-play"
 					>
 						<Play size={16} />
 						Play
@@ -47,11 +37,7 @@ export const ExecutionControls = () => {
 						onClick={pause}
 						size="sm"
 						variant="secondary"
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: '0.25rem',
-						}}
+						className="control-btn control-btn-pause"
 					>
 						<Pause size={16} />
 						Pause
@@ -63,11 +49,7 @@ export const ExecutionControls = () => {
 					size="sm"
 					variant="outline"
 					disabled={isComplete || !hasSteps}
-					style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '0.25rem',
-					}}
+					className="control-btn control-btn-step"
 				>
 					<SkipForward size={16} />
 					Step
@@ -77,11 +59,7 @@ export const ExecutionControls = () => {
 					onClick={restart}
 					size="sm"
 					variant={isComplete ? 'primary' : 'outline'}
-					style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '0.25rem',
-					}}
+					className="control-btn control-btn-restart"
 				>
 					<RotateCcw size={16} />
 					Restart
@@ -91,11 +69,7 @@ export const ExecutionControls = () => {
 					onClick={reset}
 					size="sm"
 					variant="outline"
-					style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '0.25rem',
-					}}
+					className="control-btn control-btn-reset"
 				>
 					<Square size={16} />
 					Reset
