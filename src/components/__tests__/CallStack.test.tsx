@@ -2,15 +2,18 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { CallStack } from '../CallStack'
 import { useAppStore } from '../../store'
+import type { CallStackItem } from '../../types'
 
 // Mock the store
 vi.mock('../../store', () => ({
 	useAppStore: vi.fn(),
 }))
 
+const mockUseAppStore = useAppStore as unknown as ReturnType<typeof vi.fn>
+
 describe('CallStack Component', () => {
 	it('should render empty state when call stack is empty', () => {
-		;(useAppStore as any).mockReturnValue({
+		mockUseAppStore.mockReturnValue({
 			callStack: [],
 		})
 
@@ -24,7 +27,7 @@ describe('CallStack Component', () => {
 	})
 
 	it('should render call stack items when present', () => {
-		const mockCallStack = [
+		const mockCallStack: CallStackItem[] = [
 			{
 				id: '1',
 				name: 'console.log',
@@ -37,7 +40,7 @@ describe('CallStack Component', () => {
 			},
 		]
 
-		;(useAppStore as any).mockReturnValue({
+		mockUseAppStore.mockReturnValue({
 			callStack: mockCallStack,
 		})
 
@@ -50,13 +53,13 @@ describe('CallStack Component', () => {
 	})
 
 	it('should display stack items in correct order', () => {
-		const mockCallStack = [
+		const mockCallStack: CallStackItem[] = [
 			{ id: '1', name: 'first', lineNumber: 1 },
 			{ id: '2', name: 'second', lineNumber: 2 },
 			{ id: '3', name: 'third', lineNumber: 3 },
 		]
 
-		;(useAppStore as any).mockReturnValue({
+		mockUseAppStore.mockReturnValue({
 			callStack: mockCallStack,
 		})
 
