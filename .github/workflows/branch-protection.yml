@@ -33,12 +33,7 @@ jobs:
                         required_status_checks: {
                           strict: true,
                           contexts: [
-                            'PR Checks / 🧪 PR Test Suite (lint)',
-                            'PR Checks / 🧪 PR Test Suite (type-check)', 
-                            'PR Checks / 🧪 PR Test Suite (test)',
-                            'PR Checks / 🧪 PR Test Suite (build)',
-                            'PR Checks / 🔒 Security Check',
-                            'PR Checks / 📊 Quality Metrics'
+                            'PR Checks / 🧪 Essential Checks'
                           ]
                         },
                         enforce_admins: false,

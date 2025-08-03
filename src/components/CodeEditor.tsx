@@ -7,7 +7,8 @@ export const CodeEditor = () => {
 	const { code, setCode, currentLine } = useAppStore()
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
 	const monacoRef = useRef<typeof Monaco | null>(null)
-	const decorationsRef = useRef<string[]>([])
+	const decorationsRef =
+		useRef<Monaco.editor.IEditorDecorationsCollection | null>(null)
 
 	const handleEditorChange = (value: string | undefined) => {
 		if (value !== undefined) {
@@ -21,9 +22,6 @@ export const CodeEditor = () => {
 	) => {
 		editorRef.current = editor
 		monacoRef.current = monaco
-
-		// Force trigger suggestions to ensure they work
-		editor.trigger('keyboard', 'editor.action.triggerSuggest', {})
 	}
 
 	// Helper function to find the end line of a function block
@@ -131,34 +129,36 @@ export const CodeEditor = () => {
 					const endLine = findFunctionEndLine(model, currentLine)
 
 					// Clear previous decorations and add new highlight
-					decorationsRef.current = editorRef.current.deltaDecorations(
-						decorationsRef.current,
-						[
-							{
-								range: new monacoRef.current.Range(
-									currentLine,
-									1,
-									endLine,
-									model.getLineContent(endLine).length + 1,
-								),
-								options: {
-									className: 'current-function-highlight',
-									glyphMarginClassName: 'current-line-glyph',
-								},
+					if (decorationsRef.current) {
+						decorationsRef.current.clear()
+					}
+
+					const newDecorations = [
+						{
+							range: new monacoRef.current.Range(
+								currentLine,
+								1,
+								endLine,
+								model.getLineContent(endLine).length + 1,
+							),
+							options: {
+								className: 'current-function-highlight',
+								glyphMarginClassName: 'current-line-glyph',
 							},
-						],
-					)
+						},
+					]
+					decorationsRef.current =
+						editorRef.current.createDecorationsCollection(
+							newDecorations,
+						)
 					return
 				}
 			}
 		}
 
 		// Clear decorations if no valid current line
-		if (editorRef.current) {
-			decorationsRef.current = editorRef.current.deltaDecorations(
-				decorationsRef.current,
-				[],
-			)
+		if (editorRef.current && decorationsRef.current) {
+			decorationsRef.current.clear()
 		}
 	}, [currentLine])
 
@@ -190,47 +190,43 @@ export const CodeEditor = () => {
 						tabSize: 2,
 						matchBrackets: 'always',
 						theme: 'vs-light',
-						// Autocomplete and suggestions
-						quickSuggestions: {
-							other: true,
-							comments: true,
-							strings: true,
-						},
-						suggestOnTriggerCharacters: true,
-						acceptSuggestionOnCommitCharacter: true,
-						acceptSuggestionOnEnter: 'on',
-						wordBasedSuggestions: 'allDocuments',
+						// Autocomplete and suggestions - DISABLED
+						quickSuggestions: false,
+						suggestOnTriggerCharacters: false,
+						acceptSuggestionOnCommitCharacter: false,
+						acceptSuggestionOnEnter: 'off',
+						wordBasedSuggestions: 'off',
 						parameterHints: {
-							enabled: true,
-							cycle: true,
+							enabled: false,
+							cycle: false,
 						},
 						suggest: {
-							showKeywords: true,
-							showSnippets: true,
-							showFunctions: true,
-							showConstructors: true,
-							showDeprecated: true,
-							showFields: true,
-							showVariables: true,
-							showClasses: true,
-							showStructs: true,
-							showInterfaces: true,
-							showModules: true,
-							showProperties: true,
-							showEvents: true,
-							showOperators: true,
-							showUnits: true,
-							showValues: true,
-							showConstants: true,
-							showEnums: true,
-							showEnumMembers: true,
-							showColors: true,
-							showFiles: true,
-							showReferences: true,
-							showFolders: true,
-							showTypeParameters: true,
-							showUsers: true,
-							showIssues: true,
+							showKeywords: false,
+							showSnippets: false,
+							showFunctions: false,
+							showConstructors: false,
+							showDeprecated: false,
+							showFields: false,
+							showVariables: false,
+							showClasses: false,
+							showStructs: false,
+							showInterfaces: false,
+							showModules: false,
+							showProperties: false,
+							showEvents: false,
+							showOperators: false,
+							showUnits: false,
+							showValues: false,
+							showConstants: false,
+							showEnums: false,
+							showEnumMembers: false,
+							showColors: false,
+							showFiles: false,
+							showReferences: false,
+							showFolders: false,
+							showTypeParameters: false,
+							showUsers: false,
+							showIssues: false,
 						},
 					}}
 				/>
