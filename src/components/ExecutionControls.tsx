@@ -3,8 +3,21 @@ import { Button } from './ui'
 import { useAppStore } from '../store'
 
 export const ExecutionControls = () => {
-	const { isRunning, isPaused, play, pause, step, reset, restart } =
-		useAppStore()
+	const {
+		isRunning,
+		isPaused,
+		currentStep,
+		steps,
+		play,
+		pause,
+		step,
+		reset,
+		restart,
+	} = useAppStore()
+
+	const hasSteps = steps.length > 0
+	const hasStarted = currentStep > 0
+	const isComplete = hasSteps && currentStep >= steps.length
 
 	return (
 		<div className="execution-controls">
@@ -19,6 +32,7 @@ export const ExecutionControls = () => {
 					<Button
 						onClick={play}
 						size="sm"
+						disabled={isComplete || !hasSteps}
 						style={{
 							display: 'flex',
 							alignItems: 'center',
@@ -48,6 +62,7 @@ export const ExecutionControls = () => {
 					onClick={step}
 					size="sm"
 					variant="outline"
+					disabled={isComplete || !hasSteps}
 					style={{
 						display: 'flex',
 						alignItems: 'center',
@@ -61,7 +76,7 @@ export const ExecutionControls = () => {
 				<Button
 					onClick={restart}
 					size="sm"
-					variant="outline"
+					variant={isComplete ? 'primary' : 'outline'}
 					style={{
 						display: 'flex',
 						alignItems: 'center',
@@ -88,16 +103,47 @@ export const ExecutionControls = () => {
 			</div>
 
 			<div className="status">
-				{isRunning && !isPaused && (
+				{isComplete ? (
+					<>
+						<div
+							className="status-indicator"
+							style={{ backgroundColor: '#10b981' }}
+						></div>
+						Execution Complete
+					</>
+				) : isRunning && !isPaused ? (
 					<>
 						<div className="status-indicator running"></div>
 						Running
 					</>
-				)}
-				{isPaused && (
+				) : isPaused ? (
 					<>
 						<div className="status-indicator paused"></div>
 						Paused
+					</>
+				) : hasStarted ? (
+					<>
+						<div
+							className="status-indicator"
+							style={{ backgroundColor: '#f59e0b' }}
+						></div>
+						Stopped
+					</>
+				) : hasSteps ? (
+					<>
+						<div
+							className="status-indicator"
+							style={{ backgroundColor: '#3b82f6' }}
+						></div>
+						Ready to Start
+					</>
+				) : (
+					<>
+						<div
+							className="status-indicator"
+							style={{ backgroundColor: '#6b7280' }}
+						></div>
+						No Code Loaded
 					</>
 				)}
 			</div>
