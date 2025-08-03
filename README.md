@@ -2,9 +2,10 @@
 
 An interactive, browser-based tool that helps developers understand how the JavaScript event loop works by visualizing code execution in real-time.
 
-![Event Loop Visualizer Demo](https://via.placeholder.com/800x400/2563eb/ffffff?text=Event+Loop+Visualizer)
+![Event Loop Visualizer Demo](https://github.com/ishanbagchi/event-loop-visualiser/blob/main/assets/demo-screenshot.png?raw=true)
 
 [![CI/CD Pipeline](https://github.com/ishanbagchi/event-loop-visualiser/actions/workflows/ci.yml/badge.svg)](https://github.com/ishanbagchi/event-loop-visualiser/actions/workflows/ci.yml)
+[![Deployment Status](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://event-loop-visualiser.ishanbagchi.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/github/package-json/v/ishanbagchi/event-loop-visualiser)](https://github.com/ishanbagchi/event-loop-visualiser)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
