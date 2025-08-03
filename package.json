@@ -1,7 +1,25 @@
 {
 	"name": "event-loop-visualiser",
 	"private": true,
-	"version": "0.0.0",
+	"version": "1.0.0",
+	"description": "Interactive JavaScript Event Loop Visualizer - Learn how the event loop, call stack, callback queue, and Web APIs work together",
+	"author": "Ishan Bagchi <hi@ishanbagchi.com>",
+	"homepage": "https://event-loop-visualiser.ishanbagchi.com/",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ishanbagchi/event-loop-visualiser.git"
+	},
+	"keywords": [
+		"javascript",
+		"event-loop",
+		"call-stack",
+		"callback-queue",
+		"web-apis",
+		"async",
+		"learning",
+		"visualizer",
+		"educational"
+	],
 	"type": "module",
 	"scripts": {
 		"dev": "vite",

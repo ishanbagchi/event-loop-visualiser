@@ -21,6 +21,9 @@ export const CodeEditor = () => {
 	) => {
 		editorRef.current = editor
 		monacoRef.current = monaco
+
+		// Force trigger suggestions to ensure they work
+		editor.trigger('keyboard', 'editor.action.triggerSuggest', {})
 	}
 
 	// Helper function to find the end line of a function block
@@ -164,9 +167,9 @@ export const CodeEditor = () => {
 			<div className="code-editor-header">
 				<h3>Code Editor</h3>
 				{currentLine && (
-					<span className="current-line-indicator">
+					<div className="current-line-indicator">
 						Executing line {currentLine}
-					</span>
+					</div>
 				)}
 			</div>
 			<div className="code-editor-content">
@@ -187,6 +190,48 @@ export const CodeEditor = () => {
 						tabSize: 2,
 						matchBrackets: 'always',
 						theme: 'vs-light',
+						// Autocomplete and suggestions
+						quickSuggestions: {
+							other: true,
+							comments: true,
+							strings: true,
+						},
+						suggestOnTriggerCharacters: true,
+						acceptSuggestionOnCommitCharacter: true,
+						acceptSuggestionOnEnter: 'on',
+						wordBasedSuggestions: 'allDocuments',
+						parameterHints: {
+							enabled: true,
+							cycle: true,
+						},
+						suggest: {
+							showKeywords: true,
+							showSnippets: true,
+							showFunctions: true,
+							showConstructors: true,
+							showDeprecated: true,
+							showFields: true,
+							showVariables: true,
+							showClasses: true,
+							showStructs: true,
+							showInterfaces: true,
+							showModules: true,
+							showProperties: true,
+							showEvents: true,
+							showOperators: true,
+							showUnits: true,
+							showValues: true,
+							showConstants: true,
+							showEnums: true,
+							showEnumMembers: true,
+							showColors: true,
+							showFiles: true,
+							showReferences: true,
+							showFolders: true,
+							showTypeParameters: true,
+							showUsers: true,
+							showIssues: true,
+						},
 					}}
 				/>
 			</div>

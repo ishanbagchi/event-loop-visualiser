@@ -11,6 +11,7 @@ export class CodeExecutionSimulator {
 	private callbackQueue: CallbackQueueItem[] = []
 	private webAPIs: WebAPIItem[] = []
 	private stepId = 0
+	private lines: string[] = []
 
 	private generateId(): string {
 		return `step-${++this.stepId}`
@@ -25,13 +26,14 @@ export class CodeExecutionSimulator {
 
 		// Parse all lines first to understand the full execution flow
 		const lines = code.split('\n')
+		this.lines = lines // Store for later use
 		const pendingCallbacks: Array<{
 			callback: CallbackQueueItem
 			delay: number
 		}> = []
 
-		// First, join multiline constructs like setTimeout
-		const processedCode = code.replace(/\s+/g, ' ').replace(/\n/g, ' ')
+		// Parse function declarations first
+		const functionDeclarations = this.parseFunctionDeclarations(lines)
 
 		// Pre-identify setTimeout blocks to avoid processing their content as synchronous code
 		const setTimeoutBlocks = this.identifySetTimeoutBlocks(lines)
@@ -44,6 +46,15 @@ export class CodeExecutionSimulator {
 			const trimmedLine = line.trim()
 
 			if (!trimmedLine) return
+
+			// Skip lines that are inside function bodies (except function declarations)
+			const isInsideFunctionBody = Array.from(
+				functionDeclarations.values(),
+			).some(
+				(func) =>
+					lineNumber > func.startLine && lineNumber <= func.endLine,
+			)
+			if (isInsideFunctionBody) return
 
 			// Skip lines that are inside setTimeout callbacks
 			if (
@@ -77,31 +88,67 @@ export class CodeExecutionSimulator {
 
 			if (trimmedLine.includes('setTimeout')) {
 				// setTimeout is synchronous - it just registers the timer
-				// Use the processed code to extract timeout delay properly
-				const delayMatch = processedCode.match(/},\s*(\d+)\s*\)/)
-				const delay = delayMatch ? parseInt(delayMatch[1]) : 0
+				// Extract timeout delay from the current line or the following lines
+				let delay = 0
 
-				// Step 1: setTimeout() called - goes to call stack
+				// Try multiple patterns to extract the delay
+				const patterns = [
+					/setTimeout\s*\([^,]*,\s*(\d+)\s*\)/, // setTimeout(callback, 1000)
+					/},\s*(\d+)\s*\)/, // }, 1000)
+					/\),\s*(\d+)\s*\)/, // ), 1000)
+				]
+
+				// First try to find the delay in the current line only
+				for (const pattern of patterns) {
+					const match = trimmedLine.match(pattern)
+					if (match) {
+						delay = parseInt(match[1])
+						break
+					}
+				}
+
+				// If no delay found in current line, look ahead in subsequent lines for this specific setTimeout
+				if (delay === 0) {
+					// Look ahead up to 5 lines to find the delay (for multiline setTimeout)
+					for (
+						let lookAhead = 1;
+						lookAhead <= 5 && index + lookAhead < lines.length;
+						lookAhead++
+					) {
+						const futureLineContent =
+							lines[index + lookAhead].trim()
+						for (const pattern of patterns) {
+							const match = futureLineContent.match(pattern)
+							if (match) {
+								delay = parseInt(match[1])
+								break
+							}
+						}
+						if (delay > 0) break
+					}
+				}
+
+				// Step 1: setTimeout() called - added to call stack
+				const callStackItem: CallStackItem = {
+					id: this.generateId(),
+					name: 'setTimeout',
+					lineNumber,
+				}
+				this.callStack.push(callStackItem)
+
 				this.steps.push({
 					id: this.generateId(),
 					type: 'function-call',
 					description: `setTimeout() called - added to call stack`,
-					lineNumber, // This should highlight the setTimeout line
+					lineNumber,
 					state: {
-						callStack: [
-							...this.callStack,
-							{
-								id: this.generateId(),
-								name: 'setTimeout',
-								lineNumber,
-							},
-						],
+						callStack: [...this.callStack],
 						callbackQueue: [...this.callbackQueue],
 						webAPIs: [...this.webAPIs],
 					},
 				})
 
-				// Step 2: Timer registered with Web APIs
+				// Step 2: Timer registered with Web APIs and setTimeout() removed from call stack
 				const webApiItem: WebAPIItem = {
 					id: this.generateId(),
 					name: `setTimeout(${delay}ms)`,
@@ -110,32 +157,13 @@ export class CodeExecutionSimulator {
 					lineNumber,
 				}
 				this.webAPIs.push(webApiItem)
+				this.callStack.pop() // Remove setTimeout from call stack
 
 				this.steps.push({
 					id: this.generateId(),
 					type: 'web-api',
-					description: `Timer registered with Web APIs for ${delay}ms`,
-					lineNumber, // Still on the setTimeout line
-					state: {
-						callStack: [
-							...this.callStack,
-							{
-								id: this.generateId(),
-								name: 'setTimeout',
-								lineNumber,
-							},
-						],
-						callbackQueue: [...this.callbackQueue],
-						webAPIs: [...this.webAPIs],
-					},
-				})
-
-				// Step 3: setTimeout() returns - removed from call stack
-				this.steps.push({
-					id: this.generateId(),
-					type: 'function-return',
-					description: `setTimeout() completed - removed from call stack`,
-					lineNumber, // Still on the setTimeout line
+					description: `setTimeout() executed - timer registered with Web APIs for ${delay}ms`,
+					lineNumber,
 					state: {
 						callStack: [...this.callStack],
 						callbackQueue: [...this.callbackQueue],
@@ -154,6 +182,14 @@ export class CodeExecutionSimulator {
 				pendingCallbacks.push({ callback: callbackItem, delay })
 			} else if (trimmedLine.includes('Promise.resolve')) {
 				// Handle Promise.resolve - resolves immediately and goes to microtask queue
+				// Step 1: Promise.resolve() called - added to call stack
+				const callStackItem: CallStackItem = {
+					id: this.generateId(),
+					name: 'Promise.resolve',
+					lineNumber,
+				}
+				this.callStack.push(callStackItem)
+
 				this.steps.push({
 					id: this.generateId(),
 					type: 'function-call',
@@ -161,20 +197,13 @@ export class CodeExecutionSimulator {
 						'Promise.resolve() called - added to call stack',
 					lineNumber,
 					state: {
-						callStack: [
-							...this.callStack,
-							{
-								id: this.generateId(),
-								name: 'Promise.resolve',
-								lineNumber,
-							},
-						],
+						callStack: [...this.callStack],
 						callbackQueue: [...this.callbackQueue],
 						webAPIs: [...this.webAPIs],
 					},
 				})
 
-				// Add Promise to Web APIs
+				// Step 2: Promise registered with Web APIs and Promise.resolve() removed from call stack
 				const webApiItem: WebAPIItem = {
 					id: this.generateId(),
 					name: 'Promise resolution',
@@ -183,31 +212,13 @@ export class CodeExecutionSimulator {
 					lineNumber,
 				}
 				this.webAPIs.push(webApiItem)
+				this.callStack.pop() // Remove Promise.resolve from call stack
 
 				this.steps.push({
 					id: this.generateId(),
 					type: 'web-api',
-					description: 'Promise resolution registered with Web APIs',
-					lineNumber,
-					state: {
-						callStack: [
-							...this.callStack,
-							{
-								id: this.generateId(),
-								name: 'Promise.resolve',
-								lineNumber,
-							},
-						],
-						callbackQueue: [...this.callbackQueue],
-						webAPIs: [...this.webAPIs],
-					},
-				})
-
-				this.steps.push({
-					id: this.generateId(),
-					type: 'function-return',
 					description:
-						'Promise.resolve() completed - removed from call stack',
+						'Promise.resolve() executed - promise registered with Web APIs',
 					lineNumber,
 					state: {
 						callStack: [...this.callStack],
@@ -236,7 +247,14 @@ export class CodeExecutionSimulator {
 				this.simulateConsoleLog(trimmedLine, lineNumber)
 			} else if (trimmedLine.includes('setInterval')) {
 				this.simulateSetInterval(trimmedLine, lineNumber)
+			} else if (this.isFunctionCall(trimmedLine)) {
+				this.simulateFunctionCall(
+					trimmedLine,
+					lineNumber,
+					functionDeclarations,
+				)
 			}
+			// Skip function declarations as they are hoisted and don't execute
 		})
 
 		// Second pass: After all synchronous code, process callbacks
@@ -327,10 +345,19 @@ export class CodeExecutionSimulator {
 										}
 									}
 
+									// Add console.log to call stack
+									const consoleCallStackItem: CallStackItem =
+										{
+											id: this.generateId(),
+											name: 'console.log',
+											lineNumber: lineNum,
+										}
+									this.callStack.push(consoleCallStackItem)
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-call',
-										description: `console.log(${message}) called inside Promise.then`,
+										description: `console.log(${message}) called inside Promise.then - added to call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -349,10 +376,13 @@ export class CodeExecutionSimulator {
 										],
 									})
 
+									// Remove console.log from call stack
+									this.callStack.pop()
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-return',
-										description: `console.log executed - removed from call stack`,
+										description: `console.log executed and removed from call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -364,10 +394,18 @@ export class CodeExecutionSimulator {
 									})
 								} else {
 									// Handle other statements inside the .then callback
+									const statementCallStackItem: CallStackItem =
+										{
+											id: this.generateId(),
+											name: callbackLine.trim(),
+											lineNumber: lineNum,
+										}
+									this.callStack.push(statementCallStackItem)
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-call',
-										description: `Executing: ${callbackLine.trim()}`,
+										description: `Executing: ${callbackLine.trim()} - added to call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -378,10 +416,13 @@ export class CodeExecutionSimulator {
 										},
 									})
 
+									// Remove statement from call stack
+									this.callStack.pop()
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-return',
-										description: `Statement executed - removed from call stack`,
+										description: `Statement executed and removed from call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -486,10 +527,19 @@ export class CodeExecutionSimulator {
 										? match[1]
 										: 'undefined'
 
+									// Add console.log to call stack
+									const consoleCallStackItem: CallStackItem =
+										{
+											id: this.generateId(),
+											name: 'console.log',
+											lineNumber: lineNum,
+										}
+									this.callStack.push(consoleCallStackItem)
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-call',
-										description: `console.log('${message}') called inside callback`,
+										description: `console.log('${message}') called inside callback - added to call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -508,10 +558,13 @@ export class CodeExecutionSimulator {
 										],
 									})
 
+									// Remove console.log from call stack
+									this.callStack.pop()
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-return',
-										description: `console.log executed - removed from call stack`,
+										description: `console.log executed and removed from call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -523,10 +576,18 @@ export class CodeExecutionSimulator {
 									})
 								} else {
 									// Handle other statements inside the callback
+									const statementCallStackItem: CallStackItem =
+										{
+											id: this.generateId(),
+											name: callbackLine.trim(),
+											lineNumber: lineNum,
+										}
+									this.callStack.push(statementCallStackItem)
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-call',
-										description: `Executing: ${callbackLine.trim()}`,
+										description: `Executing: ${callbackLine.trim()} - added to call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -537,10 +598,13 @@ export class CodeExecutionSimulator {
 										},
 									})
 
+									// Remove statement from call stack
+									this.callStack.pop()
+
 									this.steps.push({
 										id: this.generateId(),
 										type: 'function-return',
-										description: `Statement executed - removed from call stack`,
+										description: `Statement executed and removed from call stack`,
 										lineNumber: lineNum,
 										state: {
 											callStack: [...this.callStack],
@@ -782,6 +846,27 @@ export class CodeExecutionSimulator {
 		const match = line.match(/setInterval\s*\(\s*.*?,\s*(\d+)\s*\)/)
 		const interval = match ? parseInt(match[1]) : 1000
 
+		// Step 1: setInterval() called - added to call stack
+		const callStackItem: CallStackItem = {
+			id: this.generateId(),
+			name: 'setInterval',
+			lineNumber,
+		}
+		this.callStack.push(callStackItem)
+
+		this.steps.push({
+			id: this.generateId(),
+			type: 'function-call',
+			description: `setInterval() called - added to call stack`,
+			lineNumber,
+			state: {
+				callStack: [...this.callStack],
+				callbackQueue: [...this.callbackQueue],
+				webAPIs: [...this.webAPIs],
+			},
+		})
+
+		// Step 2: Timer registered with Web APIs and setInterval() removed from call stack
 		const webApiItem: WebAPIItem = {
 			id: this.generateId(),
 			name: `setInterval(${interval}ms)`,
@@ -789,13 +874,19 @@ export class CodeExecutionSimulator {
 			timeRemaining: interval,
 			lineNumber,
 		}
-
 		this.webAPIs.push(webApiItem)
+		this.callStack.pop() // Remove setInterval from call stack
+
 		this.steps.push({
 			id: this.generateId(),
 			type: 'web-api',
-			description: `setInterval registered with Web APIs (repeats every ${interval}ms)`,
+			description: `setInterval() executed - timer registered with Web APIs (repeats every ${interval}ms)`,
 			lineNumber,
+			state: {
+				callStack: [...this.callStack],
+				callbackQueue: [...this.callbackQueue],
+				webAPIs: [...this.webAPIs],
+			},
 		})
 	}
 
@@ -807,5 +898,194 @@ export class CodeExecutionSimulator {
 			callbackQueue: this.callbackQueue,
 			webAPIs: this.webAPIs,
 		}
+	}
+
+	private parseFunctionDeclarations(
+		lines: string[],
+	): Map<string, { startLine: number; endLine: number }> {
+		const functions = new Map<
+			string,
+			{ startLine: number; endLine: number }
+		>()
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i].trim()
+			// Match both single-line and multiline function declarations
+			const match = line.match(/function\s+(\w+)\s*\(\s*\)\s*\{/)
+			if (match) {
+				const functionName = match[1]
+				const startLine = i + 1
+				const endLine = this.findFunctionEndLine(lines, i)
+				functions.set(functionName, { startLine, endLine })
+			}
+		}
+
+		return functions
+	}
+
+	private findFunctionEndLine(lines: string[], startIndex: number): number {
+		const startLine = lines[startIndex]
+
+		// Check if this is a single-line function (opening and closing brace on same line)
+		const openBraces = (startLine.match(/\{/g) || []).length
+		const closeBraces = (startLine.match(/\}/g) || []).length
+		if (openBraces > 0 && openBraces === closeBraces) {
+			return startIndex + 1 // Single-line function
+		}
+
+		// Multi-line function - count braces across lines
+		let braceCount = 0
+		for (let i = startIndex; i < lines.length; i++) {
+			const line = lines[i]
+			braceCount += (line.match(/\{/g) || []).length
+			braceCount -= (line.match(/\}/g) || []).length
+
+			if (braceCount === 0 && i > startIndex) {
+				return i + 1 // Return 1-based line number
+			}
+		}
+		return startIndex + 1 // Return 1-based line number
+	}
+
+	private isFunctionCall(line: string): boolean {
+		// Check if it's a function call pattern: functionName();
+		const functionCallPattern = /^\s*(\w+)\s*\(\s*\)\s*;?\s*$/
+		return (
+			functionCallPattern.test(line) &&
+			!line.includes('function') &&
+			!line.includes('console.log') &&
+			!line.includes('setTimeout') &&
+			!line.includes('setInterval') &&
+			!line.includes('Promise')
+		)
+	}
+
+	private simulateFunctionCall(
+		line: string,
+		lineNumber: number,
+		functionDeclarations: Map<
+			string,
+			{ startLine: number; endLine: number }
+		>,
+	) {
+		const match = line.match(/^\s*(\w+)\s*\(\s*\)\s*;?\s*$/)
+		if (!match) return
+
+		const functionName = match[1]
+		const callStackItem: CallStackItem = {
+			id: this.generateId(),
+			name: functionName,
+			lineNumber,
+		}
+
+		// Add function to call stack
+		this.callStack.push(callStackItem)
+		this.steps.push({
+			id: this.generateId(),
+			type: 'function-call',
+			description: `Called ${functionName}() - added to call stack`,
+			lineNumber,
+			state: {
+				callStack: [...this.callStack],
+				callbackQueue: [...this.callbackQueue],
+				webAPIs: [...this.webAPIs],
+			},
+		})
+
+		// Execute function body if it exists
+		const functionDef = functionDeclarations.get(functionName)
+		if (functionDef) {
+			this.executeFunctionBody(functionDef, functionDeclarations)
+		}
+
+		// Remove function from call stack
+		this.callStack.pop()
+		this.steps.push({
+			id: this.generateId(),
+			type: 'function-return',
+			description: `${functionName}() completed - removed from call stack`,
+			lineNumber,
+			state: {
+				callStack: [...this.callStack],
+				callbackQueue: [...this.callbackQueue],
+				webAPIs: [...this.webAPIs],
+			},
+		})
+	}
+
+	private executeFunctionBody(
+		functionDef: { startLine: number; endLine: number },
+		functionDeclarations: Map<
+			string,
+			{ startLine: number; endLine: number }
+		>,
+	) {
+		const lines = this.getCurrentLines()
+
+		// For single-line functions, extract the body content from the same line
+		if (functionDef.startLine === functionDef.endLine) {
+			const line = lines[functionDef.startLine - 1]
+			if (!line) return
+
+			// Extract content between { and }
+			const bodyMatch = line.match(/\{([^}]*)\}/)
+			if (bodyMatch && bodyMatch[1].trim()) {
+				const bodyContent = bodyMatch[1].trim()
+
+				// Check if the body content is a function call
+				if (this.isFunctionCall(bodyContent)) {
+					this.simulateFunctionCall(
+						bodyContent,
+						functionDef.startLine,
+						functionDeclarations,
+					)
+				} else if (bodyContent.includes('console.log')) {
+					this.simulateConsoleLog(bodyContent, functionDef.startLine)
+				}
+			}
+			return
+		}
+
+		// Execute each line in the function body for multi-line functions
+		for (
+			let lineNum = functionDef.startLine;
+			lineNum <= functionDef.endLine;
+			lineNum++
+		) {
+			const line = lines[lineNum - 1]
+			if (!line) continue
+
+			let trimmedLine = line.trim()
+
+			// Skip function declaration line
+			if (trimmedLine.startsWith('function')) {
+				continue
+			}
+
+			// If line contains a closing brace, remove it to process the code before it
+			if (trimmedLine.includes('}')) {
+				trimmedLine = trimmedLine.replace(/\s*}\s*$/, '').trim()
+			}
+
+			// Skip empty lines
+			if (!trimmedLine) {
+				continue
+			}
+
+			if (this.isFunctionCall(trimmedLine)) {
+				this.simulateFunctionCall(
+					trimmedLine,
+					lineNum,
+					functionDeclarations,
+				)
+			} else if (trimmedLine.includes('console.log')) {
+				this.simulateConsoleLog(trimmedLine, lineNum)
+			}
+			// Add other statement types as needed
+		}
+	}
+
+	private getCurrentLines(): string[] {
+		return this.lines
 	}
 }

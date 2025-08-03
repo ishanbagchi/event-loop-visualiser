@@ -1,0 +1,20 @@
+{
+	"name": "JavaScript Event Loop Visualizer",
+	"short_name": "Event Loop Visualizer",
+	"description": "Interactive tool to learn and visualize JavaScript's event loop, call stack, callback queue, and Web APIs",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#ffffff",
+	"theme_color": "#0ea5e9",
+	"orientation": "portrait-primary",
+	"categories": ["education", "development", "productivity"],
+	"lang": "en",
+	"scope": "/",
+	"icons": [
+		{
+			"src": "/vite.svg",
+			"sizes": "any",
+			"type": "image/svg+xml"
+		}
+	]
+}

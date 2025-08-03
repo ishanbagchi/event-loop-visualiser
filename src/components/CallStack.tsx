@@ -1,15 +1,23 @@
 import { useAppStore } from '../store'
 import { Badge } from './ui'
+import { useEffect, useRef } from 'react'
 
 export const CallStack = () => {
 	const { callStack } = useAppStore()
+	const contentRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (contentRef.current && callStack.length > 0) {
+			contentRef.current.scrollTop = contentRef.current.scrollHeight
+		}
+	}, [callStack.length])
 
 	return (
 		<div className="panel call-stack">
 			<div className="panel-header">
 				<h3>Call Stack</h3>
 			</div>
-			<div className="panel-content">
+			<div className="panel-content" ref={contentRef}>
 				{callStack.length === 0 ? (
 					<div className="panel-empty">
 						<div className="panel-empty-content">

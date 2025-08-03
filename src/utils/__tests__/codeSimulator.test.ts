@@ -71,7 +71,7 @@ console.log('End')
 			const webApiStep = steps.find(
 				(step) =>
 					step.type === 'web-api' &&
-					step.description.includes('Timer registered'),
+					step.description.includes('timer registered with Web APIs'),
 			)
 			expect(webApiStep).toBeTruthy()
 			expect(webApiStep?.description).toContain('500ms')
@@ -100,7 +100,9 @@ console.log('End')
 			const webApiStep = steps.find(
 				(step) =>
 					step.type === 'web-api' &&
-					step.description.includes('Promise resolution'),
+					step.description.includes(
+						'promise registered with Web APIs',
+					),
 			)
 			expect(webApiStep).toBeTruthy()
 		})
@@ -179,14 +181,16 @@ console.log('End')
 			const setTimeoutStep = steps.find(
 				(step) =>
 					step.type === 'web-api' &&
-					step.description.includes('Timer registered'),
+					step.description.includes('timer registered with Web APIs'),
 			)
 			expect(setTimeoutStep).toBeTruthy()
 
 			const promiseStep = steps.find(
 				(step) =>
 					step.type === 'web-api' &&
-					step.description.includes('Promise resolution'),
+					step.description.includes(
+						'promise registered with Web APIs',
+					),
 			)
 			expect(promiseStep).toBeTruthy()
 		})

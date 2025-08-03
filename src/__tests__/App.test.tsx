@@ -29,8 +29,11 @@ describe('App Component', () => {
 
 		// Footer
 		expect(
-			screen.getByText(/Learn more about the JavaScript Event Loop/),
+			screen.getByText(
+				/Built with ❤️ to help developers understand JavaScript internals/,
+			),
 		).toBeInTheDocument()
+		expect(screen.getByText('📚 Event Loop Guide')).toBeInTheDocument()
 	})
 
 	it('should have execution controls', () => {

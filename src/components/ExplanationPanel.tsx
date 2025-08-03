@@ -10,16 +10,20 @@ export const ExplanationPanel = () => {
 		<div className="panel explanation-panel">
 			<div className="panel-header">
 				<h3>Explanation</h3>
-				<p>What's happening right now</p>
 			</div>
-			<div className="panel-content">
+			<div className="panel-content explanation-content">
 				{!currentStepData ? (
 					<div className="panel-empty">
 						<div className="panel-empty-content">
-							<div className="panel-empty-icon">💡</div>
-							<p>Ready to start</p>
-							<p className="small">
-								Click Play or Step to begin execution
+							<p
+								style={{
+									margin: 0,
+									color: '#6b7280',
+									fontSize: '0.875rem',
+								}}
+							>
+								Click Play or Step to begin execution and see
+								detailed explanations
 							</p>
 						</div>
 					</div>
@@ -27,25 +31,52 @@ export const ExplanationPanel = () => {
 					<div
 						style={{
 							display: 'flex',
-							flexDirection: 'column',
+							alignItems: 'center',
 							gap: '0.75rem',
+							height: '100%',
 						}}
 					>
 						<div
 							style={{
 								display: 'flex',
 								alignItems: 'center',
-								gap: '0.5rem',
+								gap: '0.4rem',
+								flexShrink: 0,
 							}}
 						>
-							<Badge variant="default">Step {currentStep}</Badge>
+							<Badge
+								variant="default"
+								style={{
+									fontSize: '0.75rem',
+									padding: '0.1rem 0.4rem',
+								}}
+							>
+								Step {currentStep}
+							</Badge>
 							{currentStepData.lineNumber && (
-								<Badge variant="default">
+								<Badge
+									variant="default"
+									style={{
+										fontSize: '0.75rem',
+										padding: '0.1rem 0.4rem',
+									}}
+								>
 									Line {currentStepData.lineNumber}
 								</Badge>
 							)}
 						</div>
-						<p style={{ fontSize: '0.875rem', color: '#374151' }}>
+						<p
+							style={{
+								fontSize: '0.875rem',
+								color: '#374151',
+								margin: 0,
+								lineHeight: 1.4,
+								flex: 1,
+								overflow: 'hidden',
+								textOverflow: 'ellipsis',
+								whiteSpace: 'nowrap',
+							}}
+						>
 							{currentStepData.description}
 						</p>
 					</div>

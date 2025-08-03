@@ -1,3 +1,4 @@
+import { Header } from './components/Header'
 import { CodeEditor } from './components/CodeEditor'
 import { ExecutionControls } from './components/ExecutionControls'
 import { CallStack } from './components/CallStack'
@@ -12,15 +13,7 @@ function App() {
 	return (
 		<div className="app">
 			{/* Header */}
-			<header className="header">
-				<div className="header-content">
-					<h1>JavaScript Event Loop Visualizer</h1>
-					<p>
-						Understand how the JavaScript event loop works by
-						stepping through code execution
-					</p>
-				</div>
-			</header>
+			<Header />
 
 			{/* Main Content */}
 			<main className="main">
@@ -52,16 +45,40 @@ function App() {
 			{/* Footer */}
 			<footer className="footer">
 				<div className="footer-content">
-					<p>
-						Learn more about the JavaScript Event Loop:{' '}
+					<div className="footer-links">
 						<a
 							href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop"
 							target="_blank"
 							rel="noopener noreferrer"
+							className="footer-link"
 						>
-							MDN Documentation
+							📚 Event Loop Guide
 						</a>
-					</p>
+						<span className="footer-separator">•</span>
+						<a
+							href="https://github.com/ishanbagchi/event-loop-visualiser"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="footer-link"
+						>
+							⭐ Star on GitHub
+						</a>
+						<span className="footer-separator">•</span>
+						<a
+							href="https://javascript.info/event-loop"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="footer-link"
+						>
+							📖 JavaScript.info
+						</a>
+					</div>
+					<div className="footer-credits">
+						<span>
+							Built with ❤️ to help developers understand
+							JavaScript internals
+						</span>
+					</div>
 				</div>
 			</footer>
 		</div>

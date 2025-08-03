@@ -1,8 +1,16 @@
 import { useAppStore } from '../store'
 import { Badge } from './ui'
+import { useEffect, useRef } from 'react'
 
 export const CallbackQueue = () => {
 	const { callbackQueue } = useAppStore()
+	const contentRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (contentRef.current && callbackQueue.length > 0) {
+			contentRef.current.scrollTop = contentRef.current.scrollHeight
+		}
+	}, [callbackQueue.length])
 
 	const getTypeBadge = (type: string) => {
 		switch (type) {
@@ -24,7 +32,7 @@ export const CallbackQueue = () => {
 			<div className="panel-header">
 				<h3>Callback Queue</h3>
 			</div>
-			<div className="panel-content">
+			<div className="panel-content" ref={contentRef}>
 				{callbackQueue.length === 0 ? (
 					<div className="panel-empty">
 						<div className="panel-empty-content">

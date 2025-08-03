@@ -98,6 +98,29 @@ Promise.resolve().then(() => {
 
 console.log('End');`,
 	},
+	{
+		id: 'nested-functions',
+		title: 'Nested Function Calls',
+		description: 'Functions calling other functions with console.log',
+		category: 'basic',
+		code: `function third() {
+  console.log("3")
+}
+
+function second() { 
+  console.log("2 before")
+  third() 
+  console.log("2 after")
+}
+
+function first() { 
+  console.log("1 before")
+  second() 
+  console.log("1 after")
+}
+
+first();`,
+	},
 ]
 
 export const useAppStore = create<AppStore>((set, get) => {

@@ -1,8 +1,16 @@
 import { useAppStore } from '../store'
 import { Badge } from './ui'
+import { useEffect, useRef } from 'react'
 
 export const WebAPIs = () => {
 	const { webAPIs } = useAppStore()
+	const contentRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (contentRef.current && webAPIs.length > 0) {
+			contentRef.current.scrollTop = contentRef.current.scrollHeight
+		}
+	}, [webAPIs.length])
 
 	const getTypeBadge = (type: string) => {
 		switch (type) {
@@ -24,7 +32,7 @@ export const WebAPIs = () => {
 			<div className="panel-header">
 				<h3>Web APIs</h3>
 			</div>
-			<div className="panel-content">
+			<div className="panel-content" ref={contentRef}>
 				{webAPIs.length === 0 ? (
 					<div className="panel-empty">
 						<div className="panel-empty-content">
@@ -54,7 +62,7 @@ export const WebAPIs = () => {
 											Time remaining: {item.timeRemaining}
 											ms
 										</span>
-									)}
+									)}{' '}
 									{item.lineNumber && (
 										<span
 											className={
