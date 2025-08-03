@@ -4,6 +4,11 @@ An interactive, browser-based tool that helps developers understand how the Java
 
 ![Event Loop Visualizer Demo](https://via.placeholder.com/800x400/2563eb/ffffff?text=Event+Loop+Visualizer)
 
+[![CI/CD Pipeline](https://github.com/ishanbagchi/event-loop-visualiser/actions/workflows/ci.yml/badge.svg)](https://github.com/ishanbagchi/event-loop-visualiser/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/github/package-json/v/ishanbagchi/event-loop-visualiser)](https://github.com/ishanbagchi/event-loop-visualiser)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 ## 🚀 Features
 
 -   **Interactive Code Editor** - Built-in Monaco editor with syntax highlighting
@@ -25,19 +30,21 @@ An interactive, browser-based tool that helps developers understand how the Java
 
 ## 🛠 Tech Stack
 
--   **Frontend Framework:** React 18 with TypeScript
+-   **Frontend Framework:** React 19 with TypeScript
 -   **Build Tool:** Vite
 -   **Code Editor:** Monaco Editor (VS Code's editor)
 -   **State Management:** Zustand
 -   **Styling:** Custom CSS with responsive design
 -   **Code Simulation:** Custom JavaScript parser and execution simulator
+-   **Testing:** Vitest + React Testing Library
+-   **CI/CD:** GitHub Actions with automated testing and security checks
 
 ## 📦 Installation
 
 1. **Clone the repository**
 
     ```bash
-    git clone https://github.com/your-username/event-loop-visualiser.git
+    git clone https://github.com/ishanbagchi/event-loop-visualiser.git
     cd event-loop-visualiser
     ```
 
@@ -120,6 +127,9 @@ src/
 -   `npm run preview` - Preview production build
 -   `npm run lint` - Run ESLint
 -   `npm run type-check` - Run TypeScript compiler check
+-   `npm run test` - Run tests with Vitest
+-   `npm run test:watch` - Run tests in watch mode
+-   `npm run coverage` - Generate test coverage report
 
 ### Code Simulation Engine
 
@@ -191,13 +201,26 @@ The app uses custom CSS with CSS variables for theming. Main styles are in:
 
 ## 🧪 Testing
 
-The project includes setup for testing with Vitest and React Testing Library:
+The project includes comprehensive testing setup:
 
 ```bash
 npm run test        # Run tests
 npm run test:watch  # Run tests in watch mode
 npm run coverage    # Generate coverage report
 ```
+
+### Automated Testing
+
+Our CI/CD pipeline automatically runs:
+
+-   ✅ **Code linting** with ESLint
+-   ✅ **Type checking** with TypeScript
+-   ✅ **Unit tests** with Vitest
+-   ✅ **Build verification**
+-   ✅ **Security auditing** for dependencies
+-   ✅ **Coverage reporting**
+
+All pull requests are automatically tested before they can be merged.
 
 ## 🚀 Deployment
 
@@ -224,19 +247,37 @@ The built files will be in the `dist/` directory.
 
 ## 🤝 Contributing
 
+We welcome contributions from the community! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information.
+
+⚠️ **Branch Protection**: The `main` branch is protected. All changes must go through pull requests with required status checks and code review. See [Branch Protection Rules](.github/BRANCH_PROTECTION.md) for details.
+
+### Quick Start for Contributors
+
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/new-feature`
-3. Commit your changes: `git commit -am 'Add new feature'`
-4. Push to the branch: `git push origin feature/new-feature`
-5. Submit a pull request
+3. Make your changes following our [coding standards](CONTRIBUTING.md#code-style-guidelines)
+4. Add tests for new functionality
+5. Commit your changes: `git commit -m "feat: add new feature"`
+6. Push to the branch: `git push origin feature/new-feature`
+7. Submit a pull request using our [PR template](.github/pull_request_template.md)
+8. Wait for automated checks and code review
 
 ### Development Guidelines
 
 -   Follow TypeScript best practices
--   Add tests for new functionality
+-   Add tests for new functionality (we use Vitest + React Testing Library)
 -   Update documentation for new features
 -   Ensure responsive design for new components
 -   Test across different browsers
+-   All PRs are automatically tested with our CI/CD pipeline
+
+### Reporting Issues
+
+Please use our issue templates:
+
+-   [🐛 Bug Report](.github/ISSUE_TEMPLATE/bug_report.md)
+-   [✨ Feature Request](.github/ISSUE_TEMPLATE/feature_request.md)
+-   [📚 Documentation Issue](.github/ISSUE_TEMPLATE/documentation.md)
 
 ## 📚 Educational Resources
 
@@ -253,6 +294,8 @@ Learn more about the JavaScript Event Loop:
 -   Very large code blocks might affect performance
 -   Mobile experience could be improved for complex visualizations
 
+Found a bug? Please [report it using our bug report template](.github/ISSUE_TEMPLATE/bug_report.md).
+
 ## 📋 Roadmap
 
 ### Phase 2 Features (Upcoming)
@@ -263,6 +306,8 @@ Learn more about the JavaScript Event Loop:
 -   **Advanced Debugging** - Breakpoints and variable inspection
 -   **More API Support** - Fetch, DOM events, MutationObserver
 -   **Accessibility Improvements** - Better keyboard navigation and screen reader support
+
+Want to suggest a feature? [Create a feature request](.github/ISSUE_TEMPLATE/feature_request.md)!
 
 ## 📄 License
 

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+    - name: 💬 Ask a Question
+      url: https://github.com/ishanbagchi/event-loop-visualiser/discussions
+      about: Ask questions and discuss ideas with the community
+    - name: 🎓 Educational Resources
+      url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop
+      about: Learn more about JavaScript's Event Loop from MDN
+    - name: 🐦 Follow Updates
+      url: https://twitter.com/ishanbagchi
+      about: Follow the maintainer for updates and announcements

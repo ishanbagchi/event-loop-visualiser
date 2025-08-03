@@ -1,0 +1,27 @@
+name: Direct Push Prevention
+
+on:
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+
+jobs:
+    prevent-direct-push:
+        name: 🚫 Prevent Direct Push to Main
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: ❌ Block Direct Push
+              run: |
+                  echo "🚫 Direct pushes to main branch are not allowed!"
+                  echo "Please create a pull request instead."
+                  echo ""
+                  echo "To fix this:"
+                  echo "1. Create a new branch: git checkout -b feature/your-feature"
+                  echo "2. Push to the new branch: git push origin feature/your-feature"
+                  echo "3. Create a pull request from the GitHub interface"
+                  echo ""
+                  echo "See CONTRIBUTING.md for more details."
+                  exit 1

@@ -1,0 +1,37 @@
+# Code Owners for Event Loop Visualiser
+
+# These users will be automatically requested for review when someone opens a pull request.
+
+# Global owners - require review for all changes
+
+-   @ishanbagchi
+
+# GitHub workflows and configuration
+
+/.github/ @ishanbagchi
+
+# Core application files
+
+/src/ @ishanbagchi
+
+# Documentation
+
+\*.md @ishanbagchi
+/docs/ @ishanbagchi
+
+# Configuration files
+
+package.json @ishanbagchi
+package-lock.json @ishanbagchi
+tsconfig.json @ishanbagchi
+vite.config.ts @ishanbagchi
+.eslintrc.\* @ishanbagchi
+
+# CI/CD and deployment
+
+/.github/workflows/ @ishanbagchi
+
+# License and contributing guidelines
+
+LICENSE @ishanbagchi
+CONTRIBUTING.md @ishanbagchi

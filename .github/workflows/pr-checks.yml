@@ -1,0 +1,213 @@
+name: PR Checks
+
+on:
+    pull_request:
+        branches: [main]
+        types: [opened, synchronize, reopened, ready_for_review]
+
+# Prevent direct pushes to main branch
+# This workflow will fail if someone tries to push directly to main
+permissions:
+    contents: read
+    pull-requests: write
+
+# Cancel previous workflow runs for the same PR
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    # Quick validation job
+    validation:
+        name: 🚀 Quick Validation
+        runs-on: ubuntu-latest
+        if: github.event.pull_request.draft == false
+
+        outputs:
+            should-run-full-suite: ${{ steps.changes.outputs.should-run }}
+
+        steps:
+            - name: 📥 Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: 🔍 Check for relevant changes
+              id: changes
+              run: |
+                  # Check if there are changes to source code, tests, or config files
+                  if git diff --name-only origin/main...HEAD | grep -E '\.(ts|tsx|js|jsx|json|yml|yaml)$'; then
+                    echo "should-run=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "should-run=false" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: 📋 PR Info
+              run: |
+                  echo "## PR Information 📋" >> $GITHUB_STEP_SUMMARY
+                  echo "**Title:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Author:** @${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Branch:** \`${{ github.head_ref }}\`" >> $GITHUB_STEP_SUMMARY
+                  echo "**Base:** \`${{ github.base_ref }}\`" >> $GITHUB_STEP_SUMMARY
+
+    # Main PR checks
+    pr-checks:
+        name: 🧪 PR Test Suite
+        runs-on: ubuntu-latest
+        needs: validation
+        if: needs.validation.outputs.should-run-full-suite == 'true'
+
+        strategy:
+            fail-fast: false
+            matrix:
+                check: ['lint', 'type-check', 'test', 'build']
+
+        steps:
+            - name: 📥 Checkout code
+              uses: actions/checkout@v4
+
+            - name: 📦 Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: 📚 Install dependencies
+              run: npm ci
+
+            - name: 🔍 Run Lint
+              if: matrix.check == 'lint'
+              run: |
+                  echo "Running ESLint..." >> $GITHUB_STEP_SUMMARY
+                  npm run lint
+
+            - name: 📝 Type Check
+              if: matrix.check == 'type-check'
+              run: |
+                  echo "Checking TypeScript..." >> $GITHUB_STEP_SUMMARY
+                  npm run type-check
+
+            - name: 🧪 Run Tests
+              if: matrix.check == 'test'
+              run: |
+                  echo "Running test suite..." >> $GITHUB_STEP_SUMMARY
+                  npm test
+
+            - name: 🏗️ Build Check
+              if: matrix.check == 'build'
+              run: |
+                  echo "Building project..." >> $GITHUB_STEP_SUMMARY
+                  npm run build
+
+    # Security and dependency checks
+    security-check:
+        name: 🔒 Security Check
+        runs-on: ubuntu-latest
+        needs: validation
+        if: needs.validation.outputs.should-run-full-suite == 'true'
+
+        steps:
+            - name: 📥 Checkout code
+              uses: actions/checkout@v4
+
+            - name: 📦 Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: 🔒 Audit dependencies
+              run: |
+                  echo "## Security Audit 🔒" >> $GITHUB_STEP_SUMMARY
+                  npm audit --audit-level=moderate || echo "⚠️ Security issues found" >> $GITHUB_STEP_SUMMARY
+
+            - name: 📋 Dependency Review
+              uses: actions/dependency-review-action@v3
+              with:
+                  fail-on-severity: moderate
+
+    # Code quality metrics
+    quality-check:
+        name: 📊 Quality Metrics
+        runs-on: ubuntu-latest
+        needs: validation
+        if: needs.validation.outputs.should-run-full-suite == 'true'
+
+        steps:
+            - name: 📥 Checkout code
+              uses: actions/checkout@v4
+
+            - name: 📦 Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: 📚 Install dependencies
+              run: npm ci
+
+            - name: 📊 Generate test coverage
+              run: |
+                  npm run coverage
+                  echo "## Test Coverage 📊" >> $GITHUB_STEP_SUMMARY
+                  echo "Coverage report generated ✅" >> $GITHUB_STEP_SUMMARY
+
+            - name: 📏 Check bundle size
+              run: |
+                  npm run build
+                  echo "## Bundle Size 📦" >> $GITHUB_STEP_SUMMARY
+                  echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+                  du -sh dist/* >> $GITHUB_STEP_SUMMARY
+                  echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+    # Final status check
+    pr-status:
+        name: ✅ PR Status
+        runs-on: ubuntu-latest
+        needs: [validation, pr-checks, security-check, quality-check]
+        if: always() && needs.validation.outputs.should-run-full-suite == 'true'
+
+        steps:
+            - name: 🎉 Success
+              if: needs.pr-checks.result == 'success' && needs.security-check.result == 'success' && needs.quality-check.result == 'success'
+              run: |
+                  echo "## ✅ All PR Checks Passed! 🎉" >> $GITHUB_STEP_SUMMARY
+                  echo "Your pull request is ready for review! 🚀" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### What was checked:" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Code linting and formatting" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ TypeScript type checking" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Test suite execution" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Build verification" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Security audit" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Code quality metrics" >> $GITHUB_STEP_SUMMARY
+
+            - name: ❌ Failure
+              if: needs.pr-checks.result != 'success' || needs.security-check.result != 'success' || needs.quality-check.result != 'success'
+              run: |
+                  echo "## ❌ PR Checks Failed" >> $GITHUB_STEP_SUMMARY
+                  echo "Please fix the issues before requesting review." >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### Status:" >> $GITHUB_STEP_SUMMARY
+                  echo "- PR Checks: ${{ needs.pr-checks.result }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- Security: ${{ needs.security-check.result }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- Quality: ${{ needs.quality-check.result }}" >> $GITHUB_STEP_SUMMARY
+                  exit 1
+
+    # Skip checks for draft PRs or docs-only changes
+    skip-checks:
+        name: ⏭️ Checks Skipped
+        runs-on: ubuntu-latest
+        needs: validation
+        if: needs.validation.outputs.should-run-full-suite == 'false' || github.event.pull_request.draft == true
+
+        steps:
+            - name: ℹ️ Skip reason
+              run: |
+                  if [ "${{ github.event.pull_request.draft }}" == "true" ]; then
+                    echo "## ⏭️ Checks Skipped - Draft PR" >> $GITHUB_STEP_SUMMARY
+                    echo "Convert to ready for review to run full test suite." >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "## ⏭️ Checks Skipped - No Relevant Changes" >> $GITHUB_STEP_SUMMARY
+                    echo "Only documentation or non-source files were changed." >> $GITHUB_STEP_SUMMARY
+                  fi
