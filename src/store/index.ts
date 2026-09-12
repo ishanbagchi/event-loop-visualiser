@@ -113,13 +113,77 @@ function second() {
   console.log("2 after")
 }
 
-function first() { 
+function first() {
   console.log("1 before")
-  second() 
+  second()
   console.log("1 after")
 }
 
 first();`,
+	},
+	{
+		id: 'loop-closures',
+		title: 'Loop Closures (let vs setTimeout)',
+		description:
+			'Classic gotcha: each `let` iteration captures its own binding, so the timers log 0, 1, 2',
+		category: 'loops',
+		code: `for (let i = 0; i < 3; i++) {
+  setTimeout(() => {
+    console.log('let i =', i);
+  }, 100);
+}`,
+	},
+	{
+		id: 'array-destructuring',
+		title: 'Array Destructuring in a Loop',
+		description: 'for...of over an array of pairs, destructured into named variables',
+		category: 'loops',
+		code: `const pairs = [[1, 2], [3, 4], [5, 6]];
+
+for (const [a, b] of pairs) {
+  console.log(a, '+', b, '=', a + b);
+}`,
+	},
+	{
+		id: 'classes-inheritance',
+		title: 'Classes & Inheritance',
+		description: 'A class hierarchy with a constructor, a method, and super',
+		category: 'classes',
+		code: `class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    console.log(this.name, 'makes a sound.');
+  }
+}
+
+class Dog extends Animal {
+  speak() {
+    super.speak();
+    console.log(this.name, 'barks.');
+  }
+}
+
+const dog = new Dog('Rex');
+dog.speak();`,
+	},
+	{
+		id: 'async-await',
+		title: 'Async/Await',
+		description:
+			'An async function suspends at `await` and resumes as a microtask once the promise settles',
+		category: 'promises',
+		code: `async function fetchData() {
+  console.log('Fetching...');
+  const result = await Promise.resolve('data');
+  console.log('Got:', result);
+  return result;
+}
+
+console.log('Start');
+fetchData().then(r => console.log('Done:', r));
+console.log('End');`,
 	},
 ]
 

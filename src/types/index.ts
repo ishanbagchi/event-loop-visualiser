@@ -68,5 +68,5 @@ export interface CodeSample {
 	title: string
 	description: string
 	code: string
-	category: 'basic' | 'timers' | 'promises' | 'events'
+	category: 'basic' | 'timers' | 'promises' | 'events' | 'loops' | 'classes'
 }

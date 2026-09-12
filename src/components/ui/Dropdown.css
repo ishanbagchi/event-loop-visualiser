@@ -1,0 +1,117 @@
+.dropdown {
+	position: relative;
+}
+
+.dropdown-trigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+	width: 100%;
+	font-family: var(--font-serif);
+	font-size: 0.9rem;
+	padding: 7px 12px;
+	cursor: pointer;
+	border-radius: var(--radius-md);
+	background: transparent;
+	border: 1px solid var(--color-border-strong);
+	color: var(--color-text);
+	transition:
+		border-color 160ms var(--ease-standard),
+		color 160ms var(--ease-standard);
+}
+
+.dropdown-trigger:hover,
+.dropdown-trigger[aria-expanded='true'] {
+	border-color: var(--color-brand);
+}
+
+.dropdown-trigger-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dropdown-caret {
+	flex: none;
+	width: 6px;
+	height: 6px;
+	border-right: 1.5px solid var(--color-text-faint);
+	border-bottom: 1.5px solid var(--color-text-faint);
+	transform: rotate(45deg) translateY(-2px);
+	transition:
+		transform 160ms var(--ease-standard),
+		border-color 160ms var(--ease-standard);
+}
+
+.dropdown-trigger[aria-expanded='true'] .dropdown-caret {
+	transform: rotate(-135deg) translateY(1px);
+	border-color: var(--color-brand);
+}
+
+.dropdown-menu {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	right: 0;
+	z-index: 20;
+	margin: 0;
+	padding: var(--space-1);
+	list-style: none;
+	max-height: 320px;
+	overflow-y: auto;
+	background: var(--color-surface-raised);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-md);
+}
+
+.dropdown-group {
+	padding: 0;
+}
+
+.dropdown-group + .dropdown-group {
+	margin-top: var(--space-1);
+	padding-top: var(--space-1);
+	border-top: 1px solid var(--color-border);
+}
+
+.dropdown-group-label {
+	display: block;
+	padding: 0.3rem 0.55rem;
+	font-family: var(--font-mono);
+	font-size: 0.6rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-text-faint);
+}
+
+.dropdown-option {
+	display: block;
+	width: 100%;
+	text-align: left;
+	background: none;
+	border: none;
+	border-left: 2px solid transparent;
+	padding: 0.4rem 0.55rem;
+	font-family: var(--font-serif);
+	font-size: 0.85rem;
+	color: var(--color-text-muted);
+	cursor: pointer;
+	border-radius: var(--radius-sm);
+	transition:
+		color 160ms var(--ease-standard),
+		background-color 160ms var(--ease-standard),
+		border-color 160ms var(--ease-standard);
+}
+
+.dropdown-option:hover {
+	color: var(--color-text);
+	background: var(--color-surface);
+}
+
+.dropdown-option.active {
+	color: var(--color-brand);
+	border-left-color: var(--color-brand);
+}

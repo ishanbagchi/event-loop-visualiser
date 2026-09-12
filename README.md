@@ -16,8 +16,9 @@ An interactive, browser-based tool that helps developers understand how the Java
 -   **Click-to-Edit Source Panel** - Click anywhere in the syntax-highlighted trace to edit in place, then re-run ("Trace this")
 -   **Real-time Visualization** - Watch the call stack, Web APIs, microtask queue, and callback queue update live
 -   **Step-by-Step Execution** - Control execution flow with play, pause, step, and reset
--   **Promise & Async Support** - Real `.then()`/`.catch()`/`.finally()` chaining with a dedicated microtask queue pane, separate from the macrotask callback queue
+-   **Promise & Async Support** - Real `.then()`/`.catch()`/`.finally()` chaining and `async`/`await` (suspend/resume through the microtask queue), with a dedicated microtask queue pane separate from the macrotask callback queue
 -   **Function Calls, Args & Recursion** - Real function arguments, return values, closures, and recursive calls
+-   **Loops, Classes & Destructuring** - `for`/`while`/`for...of`/`for...in`, labeled `break`/`continue`, classes (fields, static members, getters/setters, `super`), and array/object destructuring (defaults, rest, nested)
 -   **Console Output** - Monitor `console.log` output (multi-argument, real value formatting) with proper timing
 -   **Sample Code Library** - Pre-built examples for common async patterns
 -   **Responsive Design** - Works on desktop and mobile devices
@@ -32,7 +33,7 @@ An interactive, browser-based tool that helps developers understand how the Java
 
 ### Not yet supported
 
-The interpreter is a real (but intentionally small) implementation, not a full JS engine. `async`/`await`, loops (`for`/`while`), classes, and destructuring aren't implemented yet — code using them surfaces a visible error step instead of silently doing the wrong thing. See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for the current list.
+The interpreter is a real (but intentionally small) implementation, not a full JS engine. Generator functions (`function*`/`yield`) and private class fields (`#field`) aren't implemented yet — code using them surfaces a visible error step instead of silently doing the wrong thing. `async`/`await`, loops (`for`/`while`/`for...of`/`for...in`), classes, and destructuring are all supported. See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for the current list.
 
 ## 🛠 Tech Stack
 
