@@ -1,85 +1,36 @@
 import { useAppStore } from '../store'
-import { Badge } from './ui'
-import { useEffect, useRef } from 'react'
+import { PaneShell } from './PaneShell'
 
 export const WebAPIs = () => {
-	const { webAPIs } = useAppStore()
-	const contentRef = useRef<HTMLDivElement>(null)
-
-	useEffect(() => {
-		if (contentRef.current && webAPIs.length > 0) {
-			contentRef.current.scrollTop = contentRef.current.scrollHeight
-		}
-	}, [webAPIs.length])
-
-	const getTypeBadge = (type: string) => {
-		switch (type) {
-			case 'setTimeout':
-				return <Badge variant="warning">Timer</Badge>
-			case 'setInterval':
-				return <Badge variant="warning">Interval</Badge>
-			case 'DOM':
-				return <Badge variant="default">DOM</Badge>
-			case 'XHR':
-				return <Badge variant="error">XHR</Badge>
-			default:
-				return <Badge variant="default">API</Badge>
-		}
-	}
+	const webAPIs = useAppStore((state) => state.webAPIs)
 
 	return (
-		<div className="panel web-apis">
-			<div className="panel-header">
-				<h3>Web APIs</h3>
-			</div>
-			<div className="panel-content" ref={contentRef}>
-				{webAPIs.length === 0 ? (
-					<div className="panel-empty">
-						<div className="panel-empty-content">
-							<div className="panel-empty-icon">🌐</div>
-							<p>No active Web APIs</p>
-							<p className="small">
-								setTimeout, DOM events, etc. will appear here
-							</p>
-						</div>
-					</div>
-				) : (
-					<div>
-						{webAPIs.map((item) => (
-							<div
-								key={item.id}
-								className={`api-item ${item.type}`}
-							>
-								<div className="item-header">
-									<span className="item-name">
-										{item.name}
-									</span>
-									{getTypeBadge(item.type)}
-								</div>
-								<div className="item-details">
-									{item.timeRemaining !== undefined && (
-										<span>
-											Time remaining: {item.timeRemaining}
-											ms
-										</span>
-									)}{' '}
-									{item.lineNumber && (
-										<span
-											className={
-												item.timeRemaining !== undefined
-													? ' • '
-													: ''
-											}
-										>
-											Line {item.lineNumber}
-										</span>
-									)}
-								</div>
+		<PaneShell
+			className="web-apis"
+			title="Web APIs"
+			note="Timers and async work the browser holds off-thread"
+			color="var(--color-timer)"
+			count={webAPIs.length}
+		>
+			{webAPIs.length === 0 ? (
+				<div className="pane-empty">
+					<p>No active Web APIs</p>
+					<p className="small">
+						setTimeout, DOM events, etc. will appear here
+					</p>
+				</div>
+			) : (
+				webAPIs.map((item) => (
+					<div key={item.id} className="api-item">
+						<div className="item-name">{item.name}</div>
+						{item.lineNumber && (
+							<div className="item-details">
+								Line {item.lineNumber}
 							</div>
-						))}
+						)}
 					</div>
-				)}
-			</div>
-		</div>
+				))
+			)}
+		</PaneShell>
 	)
 }

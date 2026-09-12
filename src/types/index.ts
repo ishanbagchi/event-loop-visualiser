@@ -6,6 +6,7 @@ export interface ExecutionStep {
 		| 'web-api'
 		| 'callback-queue'
 		| 'console.log'
+		| 'error'
 	description: string
 	lineNumber?: number
 	state?: EventLoopState
@@ -41,6 +42,7 @@ export interface ConsoleLog {
 	message: string
 	type: 'log' | 'info' | 'warn' | 'error' | 'success'
 	timestamp: number
+	from?: 'synchronous' | 'microtask queue' | 'callback queue'
 }
 
 export interface EventLoopState {

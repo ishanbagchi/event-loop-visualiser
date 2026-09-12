@@ -4,16 +4,22 @@ import { CallStack } from '../CallStack'
 import { useAppStore } from '../../store'
 import type { CallStackItem } from '../../types'
 
-// Mock the store
 vi.mock('../../store', () => ({
 	useAppStore: vi.fn(),
 }))
 
 const mockUseAppStore = useAppStore as unknown as ReturnType<typeof vi.fn>
 
+const mockUseAppStoreState = (state: Record<string, unknown>) => {
+	mockUseAppStore.mockImplementation(
+		(selector?: (s: Record<string, unknown>) => unknown) =>
+			selector ? selector(state) : state,
+	)
+}
+
 describe('CallStack Component', () => {
 	it('should render empty state when call stack is empty', () => {
-		mockUseAppStore.mockReturnValue({
+		mockUseAppStoreState({
 			callStack: [],
 		})
 
@@ -40,7 +46,7 @@ describe('CallStack Component', () => {
 			},
 		]
 
-		mockUseAppStore.mockReturnValue({
+		mockUseAppStoreState({
 			callStack: mockCallStack,
 		})
 
@@ -59,7 +65,7 @@ describe('CallStack Component', () => {
 			{ id: '3', name: 'third', lineNumber: 3 },
 		]
 
-		mockUseAppStore.mockReturnValue({
+		mockUseAppStoreState({
 			callStack: mockCallStack,
 		})
 
@@ -68,7 +74,6 @@ describe('CallStack Component', () => {
 		const stackItems = screen.getAllByText(/Line \d+/)
 		expect(stackItems).toHaveLength(3)
 
-		// Items should be displayed in order (bottom to top of stack)
 		expect(screen.getByText('first')).toBeInTheDocument()
 		expect(screen.getByText('second')).toBeInTheDocument()
 		expect(screen.getByText('third')).toBeInTheDocument()

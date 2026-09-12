@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 
-// Test utility functions that might be added later
 describe('Utility Functions', () => {
 	describe('ID Generation', () => {
 		it('should generate unique IDs', () => {
@@ -30,7 +29,6 @@ describe('Utility Functions', () => {
 
 		it('should extract function names', () => {
 			const extractFunctionName = (line: string) => {
-				// For console.log, we want to extract 'console'
 				const match =
 					line.match(/^(\w+)\.?\w*\s*\(/) || line.match(/(\w+)\s*\(/)
 				return match ? match[1] : null
@@ -77,17 +75,14 @@ describe('Utility Functions', () => {
 		it('should handle queue operations', () => {
 			const queue: string[] = []
 
-			// Enqueue
 			queue.push('first')
 			queue.push('second')
 			expect(queue).toHaveLength(2)
 
-			// Dequeue
 			const first = queue.shift()
 			expect(first).toBe('first')
 			expect(queue).toHaveLength(1)
 
-			// Peek
 			expect(queue[0]).toBe('second')
 			expect(queue).toHaveLength(1)
 		})
@@ -95,17 +90,14 @@ describe('Utility Functions', () => {
 		it('should handle stack operations', () => {
 			const stack: string[] = []
 
-			// Push
 			stack.push('first')
 			stack.push('second')
 			expect(stack).toHaveLength(2)
 
-			// Pop
 			const top = stack.pop()
 			expect(top).toBe('second')
 			expect(stack).toHaveLength(1)
 
-			// Peek
 			expect(stack[stack.length - 1]).toBe('first')
 			expect(stack).toHaveLength(1)
 		})

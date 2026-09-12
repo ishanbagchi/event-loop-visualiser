@@ -2,10 +2,40 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-		<!-- Primary Meta Tags -->
+		<script>
+			;(function () {
+				try {
+					var stored = localStorage.getItem('theme-mode')
+					var mode =
+						stored === 'light' || stored === 'dark' ? stored : 'system'
+					var resolved =
+						mode === 'system'
+							? window.matchMedia('(prefers-color-scheme: light)')
+									.matches
+								? 'light'
+								: 'dark'
+							: mode
+					document.documentElement.dataset.theme = resolved
+				} catch (e) {
+					document.documentElement.dataset.theme = 'dark'
+				}
+			})()
+		</script>
+
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			rel="preconnect"
+			href="https://fonts.gstatic.com"
+			crossorigin=""
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+			rel="stylesheet"
+		/>
+
 		<title>
 			JavaScript Event Loop Visualizer - Interactive Learning Tool
 		</title>
@@ -24,13 +54,11 @@
 		<meta name="author" content="Ishan Bagchi" />
 		<meta name="robots" content="index, follow" />
 
-		<!-- Canonical URL -->
 		<link
 			rel="canonical"
 			href="https://event-loop-visualiser.ishanbagchi.com/"
 		/>
 
-		<!-- Open Graph / Facebook -->
 		<meta property="og:type" content="website" />
 		<meta
 			property="og:url"
@@ -50,7 +78,6 @@
 		/>
 		<meta property="og:site_name" content="Event Loop Visualizer" />
 
-		<!-- Twitter -->
 		<meta property="twitter:card" content="summary_large_image" />
 		<meta
 			property="twitter:url"
@@ -70,8 +97,7 @@
 		/>
 		<meta property="twitter:creator" content="@ishanbagchi" />
 
-		<!-- Additional Meta Tags -->
-		<meta name="theme-color" content="#0ea5e9" />
+		<meta name="theme-color" content="#141312" />
 		<meta name="application-name" content="Event Loop Visualizer" />
 		<meta
 			name="apple-mobile-web-app-title"
@@ -80,10 +106,8 @@
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-		<!-- PWA Manifest -->
 		<link rel="manifest" href="/manifest.json" />
 
-		<!-- Structured Data for SEO -->
 		<script type="application/ld+json">
 			{
 				"@context": "https://schema.org",

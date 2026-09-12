@@ -1,18 +1,20 @@
 import { useAppStore } from '../store'
 import type { ConsoleLog } from '../types'
 
+const fromTone = (from: ConsoleLog['from']) => {
+	if (from === 'microtask queue') return 'var(--color-well-promise)'
+	if (from === 'callback queue') return 'var(--color-well-stack)'
+	return 'var(--color-well-text-faint)'
+}
+
 export const Console = () => {
-	const { consoleLogs } = useAppStore()
+	const consoleLogs = useAppStore((state) => state.consoleLogs)
 
 	return (
 		<div className="console-panel">
 			<div className="console-header">
 				<h3>Console Output</h3>
-				<div className="console-dots">
-					<div className="console-dot red"></div>
-					<div className="console-dot yellow"></div>
-					<div className="console-dot green"></div>
-				</div>
+				<span className="console-order-label">In execution order</span>
 			</div>
 			<div className="console-content">
 				{!consoleLogs || consoleLogs.length === 0 ? (
@@ -21,17 +23,24 @@ export const Console = () => {
 					</div>
 				) : (
 					<div>
-						{consoleLogs.map((log: ConsoleLog) => (
-							<div
-								key={log.id}
-								className={`console-log ${log.type}`}
-							>
-								<span className="console-timestamp">
-									{new Date(
-										log.timestamp,
-									).toLocaleTimeString()}
+						{consoleLogs.map((log: ConsoleLog, index) => (
+							<div key={log.id} className="console-row">
+								<span className="console-row-index">
+									{String(index + 1).padStart(2, '0')}
 								</span>
-								{log.message}
+								<span
+									className={`console-log ${log.type}`}
+								>
+									{log.message}
+								</span>
+								{log.from && (
+									<span
+										className="console-row-from"
+										style={{ color: fromTone(log.from) }}
+									>
+										{log.from}
+									</span>
+								)}
 							</div>
 						))}
 					</div>

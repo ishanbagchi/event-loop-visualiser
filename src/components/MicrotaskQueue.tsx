@@ -1,28 +1,28 @@
 import { useAppStore } from '../store'
 import { PaneShell } from './PaneShell'
 
-export const CallbackQueue = () => {
+export const MicrotaskQueue = () => {
 	const callbackQueue = useAppStore((state) => state.callbackQueue)
-	const macrotasks = callbackQueue.filter((item) => item.type !== 'promise')
+	const microtasks = callbackQueue.filter((item) => item.type === 'promise')
 
 	return (
 		<PaneShell
-			className="callback-queue"
-			title="Callback Queue"
-			note="Macrotasks. One per tick, after microtasks."
-			color="var(--color-stack)"
-			count={macrotasks.length}
+			className="microtask-queue"
+			title="Microtask Queue"
+			note="Promises and await. Drained fully, first."
+			color="var(--color-promise)"
+			count={microtasks.length}
 		>
-			{macrotasks.length === 0 ? (
+			{microtasks.length === 0 ? (
 				<div className="pane-empty">
-					<p>Callback queue is empty</p>
+					<p>Microtask queue is empty</p>
 					<p className="small">
-						Callbacks will queue here after Web APIs
+						Promise callbacks will queue here
 					</p>
 				</div>
 			) : (
-				macrotasks.map((item) => (
-					<div key={item.id} className="queue-item">
+				microtasks.map((item) => (
+					<div key={item.id} className="microtask-item">
 						<div className="item-name">{item.name}</div>
 						{item.lineNumber && (
 							<div className="item-details">

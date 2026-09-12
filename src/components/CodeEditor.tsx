@@ -1,236 +1,300 @@
-import { Editor } from '@monaco-editor/react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import * as acorn from 'acorn'
+import * as walk from 'acorn-walk'
 import { useAppStore } from '../store'
-import { useEffect, useRef } from 'react'
-import type * as Monaco from 'monaco-editor'
+import { useShallow } from 'zustand/react/shallow'
+
+type TokenKind = 'keyword' | 'string' | 'number' | 'comment' | 'call'
+
+interface HighlightSegment {
+	text: string
+	kind?: TokenKind
+}
+
+const highlightSegments = (code: string): HighlightSegment[] => {
+	type Range = { start: number; end: number; kind: TokenKind }
+	const ranges: Range[] = []
+	const comments: acorn.Comment[] = []
+
+	try {
+		const tokens = [
+			...acorn.tokenizer(code, { ecmaVersion: 2020, onComment: comments }),
+		]
+		comments.forEach((c) =>
+			ranges.push({ start: c.start, end: c.end, kind: 'comment' }),
+		)
+		tokens.forEach((tok, i) => {
+			const label = tok.type.label
+			if (tok.type.keyword) {
+				ranges.push({ start: tok.start, end: tok.end, kind: 'keyword' })
+			} else if (
+				label === 'string' ||
+				label === 'template' ||
+				label === 'regexp'
+			) {
+				ranges.push({ start: tok.start, end: tok.end, kind: 'string' })
+			} else if (label === 'num') {
+				ranges.push({ start: tok.start, end: tok.end, kind: 'number' })
+			} else if (label === 'name' && tokens[i + 1]?.type.label === '(') {
+				ranges.push({ start: tok.start, end: tok.end, kind: 'call' })
+			}
+		})
+	} catch {
+		return [{ text: code }]
+	}
+
+	ranges.sort((a, b) => a.start - b.start)
+
+	const segments: HighlightSegment[] = []
+	let cursor = 0
+	for (const r of ranges) {
+		if (r.start < cursor) continue
+		if (r.start > cursor) segments.push({ text: code.slice(cursor, r.start) })
+		segments.push({ text: code.slice(r.start, r.end), kind: r.kind })
+		cursor = r.end
+	}
+	if (cursor < code.length) segments.push({ text: code.slice(cursor) })
+	return segments
+}
+
+const segmentsByLine = (code: string): HighlightSegment[][] => {
+	const perLine: HighlightSegment[][] = [[]]
+	highlightSegments(code).forEach((seg) => {
+		const parts = seg.text.split('\n')
+		parts.forEach((part, i) => {
+			if (i > 0) perLine.push([])
+			if (part.length > 0) {
+				perLine[perLine.length - 1].push({ text: part, kind: seg.kind })
+			}
+		})
+	})
+	return perLine
+}
+
+// Uses the same AST the interpreter executes against (rather than a
+// separate line-scanning heuristic) so the highlighted range can never
+// disagree with the interpreter's actual step boundaries.
+const findBlockEndLine = (code: string, startLine: number): number => {
+	let program: acorn.Node
+	try {
+		program = acorn.parse(code, { ecmaVersion: 2022, locations: true })
+	} catch {
+		return startLine
+	}
+
+	let bestEndLine = startLine
+	walk.full(program, (node) => {
+		if (!node.loc || node.loc.start.line !== startLine) return
+		if (node.loc.end.line > bestEndLine) bestEndLine = node.loc.end.line
+	})
+	return bestEndLine
+}
 
 export const CodeEditor = () => {
-	const { code, setCode, currentLine } = useAppStore()
-	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
-	const monacoRef = useRef<typeof Monaco | null>(null)
-	const decorationsRef =
-		useRef<Monaco.editor.IEditorDecorationsCollection | null>(null)
+	const { code, setCode, currentLine } = useAppStore(
+		useShallow((state) => ({
+			code: state.code,
+			setCode: state.setCode,
+			currentLine: state.currentLine,
+		})),
+	)
 
-	const handleEditorChange = (value: string | undefined) => {
-		if (value !== undefined) {
-			setCode(value)
-		}
-	}
+	const [editing, setEditing] = useState(false)
+	const [draft, setDraft] = useState(code)
+	const [error, setError] = useState<string | null>(null)
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const pendingCaretRef = useRef<number | null>(null)
 
-	const handleEditorMount = (
-		editor: Monaco.editor.IStandaloneCodeEditor,
-		monaco: typeof Monaco,
-	) => {
-		editorRef.current = editor
-		monacoRef.current = monaco
-	}
-
-	// Helper function to find the end line of a function block
-	const findFunctionEndLine = (
-		model: Monaco.editor.ITextModel,
-		startLine: number,
-	): number => {
-		const startLineContent = model.getLineContent(startLine).trim()
-
-		// Check if this line starts a function block (setTimeout, setInterval, Promise, etc.)
-		const functionPatterns = [
-			/setTimeout\s*\(/,
-			/setInterval\s*\(/,
-			/Promise\s*\./,
-			/\.then\s*\(/,
-			/\.catch\s*\(/,
-			/function\s*\(/,
-			/=>\s*{/,
-		]
-
-		const isFunctionStart = functionPatterns.some((pattern) =>
-			pattern.test(startLineContent),
-		)
-
-		if (!isFunctionStart) {
-			return startLine // Not a function, highlight just this line
-		}
-
-		// Find the matching closing brace/parenthesis
-		let braceCount = 0
-		let parenCount = 0
-		let inString = false
-		let stringChar = ''
-
-		for (
-			let lineNum = startLine;
-			lineNum <= model.getLineCount();
-			lineNum++
-		) {
-			const lineContent = model.getLineContent(lineNum)
-
-			for (let i = 0; i < lineContent.length; i++) {
-				const char = lineContent[i]
-				const prevChar = i > 0 ? lineContent[i - 1] : ''
-
-				// Handle string literals
-				if (
-					(char === '"' || char === "'" || char === '`') &&
-					prevChar !== '\\'
-				) {
-					if (!inString) {
-						inString = true
-						stringChar = char
-					} else if (char === stringChar) {
-						inString = false
-						stringChar = ''
-					}
-					continue
-				}
-
-				if (inString) continue
-
-				// Count braces and parentheses
-				if (char === '{') braceCount++
-				else if (char === '}') braceCount--
-				else if (char === '(') parenCount++
-				else if (char === ')') parenCount--
-
-				// If we've closed all braces and parentheses, we found the end
-				if (
-					braceCount === 0 &&
-					parenCount === 0 &&
-					lineNum > startLine
-				) {
-					// Check if this line ends with ); which indicates end of function call
-					if (
-						lineContent.trim().endsWith(');') ||
-						lineContent.trim().endsWith('}')
-					) {
-						return lineNum
-					}
-				}
-			}
-		}
-
-		return startLine // Fallback to single line if we can't find the end
-	}
-
-	// Update line highlighting when currentLine changes
 	useEffect(() => {
-		if (
-			editorRef.current &&
-			monacoRef.current &&
-			currentLine &&
-			currentLine > 0
-		) {
-			// Get the total line count to ensure we don't highlight invalid lines
-			const model = editorRef.current.getModel()
-			if (model && currentLine <= model.getLineCount()) {
-				// Get the line content to check if it's not empty
-				const lineContent = model.getLineContent(currentLine).trim()
+		if (!editing) setDraft(code)
+	}, [code, editing])
 
-				if (lineContent) {
-					// Find the end line of the function block
-					const endLine = findFunctionEndLine(model, currentLine)
+	useEffect(() => {
+		if (!editing) return
+		const el = textareaRef.current
+		if (!el) return
+		el.focus()
+		const caret = pendingCaretRef.current
+		pendingCaretRef.current = null
+		if (caret != null) {
+			const pos = Math.max(0, Math.min(caret, el.value.length))
+			el.setSelectionRange(pos, pos)
+		}
+	}, [editing])
 
-					// Clear previous decorations and add new highlight
-					if (decorationsRef.current) {
-						decorationsRef.current.clear()
-					}
+	const lines = code.split('\n')
+	const blockEndLine =
+		currentLine != null ? findBlockEndLine(code, currentLine) : null
+	const highlightedLines = useMemo(() => segmentsByLine(code), [code])
 
-					const newDecorations = [
-						{
-							range: new monacoRef.current.Range(
-								currentLine,
-								1,
-								endLine,
-								model.getLineContent(endLine).length + 1,
-							),
-							options: {
-								className: 'current-function-highlight',
-								glyphMarginClassName: 'current-line-glyph',
-							},
-						},
-					]
-					decorationsRef.current =
-						editorRef.current.createDecorationsCollection(
-							newDecorations,
-						)
-					return
-				}
-			}
+	const enterEdit = (caretIndex: number | null = null) => {
+		if (editing) return
+		setError(null)
+		setDraft(code)
+		pendingCaretRef.current = caretIndex
+		setEditing(true)
+	}
+
+	const caretIndexFromPoint = (x: number, y: number): number | null => {
+		const doc = document as Document & {
+			caretRangeFromPoint?: (x: number, y: number) => Range | null
+			caretPositionFromPoint?: (
+				x: number,
+				y: number,
+			) => { offsetNode: Node; offset: number } | null
 		}
 
-		// Clear decorations if no valid current line
-		if (editorRef.current && decorationsRef.current) {
-			decorationsRef.current.clear()
+		let node: Node | null = null
+		let offset = 0
+		if (doc.caretRangeFromPoint) {
+			const range = doc.caretRangeFromPoint(x, y)
+			if (!range) return null
+			node = range.startContainer
+			offset = range.startOffset
+		} else if (doc.caretPositionFromPoint) {
+			const pos = doc.caretPositionFromPoint(x, y)
+			if (!pos) return null
+			node = pos.offsetNode
+			offset = pos.offset
+		} else {
+			return null
 		}
-	}, [currentLine])
+
+		const container =
+			node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element)
+		const lineEl = container?.closest('.code-line') as HTMLElement | null
+		if (!lineEl) return null
+
+		const lineNum = Number(lineEl.dataset.line)
+		if (!Number.isFinite(lineNum)) return null
+		const lineText = lines[lineNum - 1] ?? ''
+		const inGutter = container?.closest('.code-line-number') != null
+
+		let offsetInLine = 0
+		const contentSpan = lineEl.querySelector(
+			':scope > span:not(.code-line-number)',
+		)
+		if (!inGutter && contentSpan) {
+			const measure = document.createRange()
+			measure.selectNodeContents(contentSpan)
+			measure.setEnd(node, offset)
+			offsetInLine = measure.toString().length
+		}
+		offsetInLine = Math.max(0, Math.min(offsetInLine, lineText.length))
+
+		let index = offsetInLine
+		for (let i = 0; i < lineNum - 1; i++) {
+			index += (lines[i]?.length ?? 0) + 1
+		}
+		return index
+	}
+
+	const handleRun = () => {
+		if (!draft.trim()) {
+			setError(
+				'Nothing recognisable to trace — try console.log, setTimeout, or a promise.',
+			)
+			return
+		}
+		setCode(draft)
+		setEditing(false)
+		setError(null)
+	}
+
+	const handleCancel = () => {
+		setDraft(code)
+		setEditing(false)
+		setError(null)
+	}
 
 	return (
 		<div className="code-editor">
 			<div className="code-editor-header">
-				<h3>Code Editor</h3>
-				{currentLine && (
-					<div className="current-line-indicator">
-						Executing line {currentLine}
+				<h3>Source &middot; editable</h3>
+				<span className="current-line-indicator">
+					{editing
+						? 'Click Trace this to run your edit'
+						: currentLine
+							? `Executing line ${currentLine}`
+							: 'Click the code to edit it'}
+				</span>
+			</div>
+
+			{editing ? (
+				<div className="code-editor-edit">
+					<textarea
+						ref={textareaRef}
+						className="code-editor-textarea"
+						spellCheck={false}
+						value={draft}
+						onChange={(e) => setDraft(e.target.value)}
+					/>
+					<div className="code-editor-edit-actions">
+						<button type="button" className="btn-trace" onClick={handleRun}>
+							Trace this ▸
+						</button>
+						<button type="button" className="btn-cancel" onClick={handleCancel}>
+							Cancel
+						</button>
+						<span className="code-editor-hint">
+							Understands console.log, setTimeout, Promise.then, queueMicrotask,
+							async/await, functions and simple variables.
+						</span>
 					</div>
-				)}
-			</div>
-			<div className="code-editor-content">
-				<Editor
-					height="100%"
-					defaultLanguage="javascript"
-					value={code}
-					onChange={handleEditorChange}
-					onMount={handleEditorMount}
-					options={{
-						minimap: { enabled: false },
-						fontSize: 14,
-						lineNumbers: 'on',
-						roundedSelection: false,
-						scrollBeyondLastLine: false,
-						automaticLayout: true,
-						wordWrap: 'on',
-						tabSize: 2,
-						matchBrackets: 'always',
-						theme: 'vs-light',
-						// Autocomplete and suggestions - DISABLED
-						quickSuggestions: false,
-						suggestOnTriggerCharacters: false,
-						acceptSuggestionOnCommitCharacter: false,
-						acceptSuggestionOnEnter: 'off',
-						wordBasedSuggestions: 'off',
-						parameterHints: {
-							enabled: false,
-							cycle: false,
-						},
-						suggest: {
-							showKeywords: false,
-							showSnippets: false,
-							showFunctions: false,
-							showConstructors: false,
-							showDeprecated: false,
-							showFields: false,
-							showVariables: false,
-							showClasses: false,
-							showStructs: false,
-							showInterfaces: false,
-							showModules: false,
-							showProperties: false,
-							showEvents: false,
-							showOperators: false,
-							showUnits: false,
-							showValues: false,
-							showConstants: false,
-							showEnums: false,
-							showEnumMembers: false,
-							showColors: false,
-							showFiles: false,
-							showReferences: false,
-							showFolders: false,
-							showTypeParameters: false,
-							showUsers: false,
-							showIssues: false,
-						},
+				</div>
+			) : (
+				<pre
+					className="code-editor-content"
+					role="button"
+					tabIndex={0}
+					aria-label="Click to edit the source code"
+					onClick={(e) => {
+						enterEdit(caretIndexFromPoint(e.clientX, e.clientY))
 					}}
-				/>
-			</div>
+					onKeyDown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault()
+							enterEdit()
+						}
+					}}
+				>
+					{lines.map((text, idx) => {
+						const n = idx + 1
+						const inBlock =
+							currentLine != null &&
+							blockEndLine != null &&
+							n >= currentLine &&
+							n <= blockEndLine
+						const isCurrent = currentLine === n
+						const segments = highlightedLines[idx] ?? []
+						return (
+							<div
+								key={n}
+								data-line={n}
+								className={`code-line${inBlock ? ' active' : ''}${
+									isCurrent ? ' current' : ''
+								}`}
+							>
+								<span className="code-line-number">{n}</span>
+								<span>
+									{segments.length === 0
+										? text || ' '
+										: segments.map((seg, i) => (
+												<span
+													key={i}
+													className={seg.kind ? `tok-${seg.kind}` : undefined}
+												>
+													{seg.text}
+												</span>
+											))}
+								</span>
+							</div>
+						)
+					})}
+				</pre>
+			)}
+
+			{error && <div className="code-editor-error">{error}</div>}
 		</div>
 	)
 }

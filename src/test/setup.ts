@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom'
 
-// Mock ResizeObserver
 Object.defineProperty(globalThis, 'ResizeObserver', {
 	value: class ResizeObserver {
 		observe() {}
@@ -9,7 +8,6 @@ Object.defineProperty(globalThis, 'ResizeObserver', {
 	},
 })
 
-// Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
 	writable: true,
 	value: (query: string) => ({

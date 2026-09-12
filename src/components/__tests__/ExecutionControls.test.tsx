@@ -4,18 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { ExecutionControls } from '../ExecutionControls'
 import { useAppStore } from '../../store'
 
-// Mock the store
 vi.mock('../../store', () => ({
 	useAppStore: vi.fn(),
-}))
-
-// Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-	Play: () => <div data-testid="play-icon" />,
-	Pause: () => <div data-testid="pause-icon" />,
-	SkipForward: () => <div data-testid="skip-forward-icon" />,
-	RotateCcw: () => <div data-testid="rotate-ccw-icon" />,
-	Square: () => <div data-testid="square-icon" />,
 }))
 
 const mockStore = {
@@ -26,15 +16,21 @@ const mockStore = {
 	play: vi.fn(),
 	pause: vi.fn(),
 	step: vi.fn(),
+	back: vi.fn(),
 	reset: vi.fn(),
-	restart: vi.fn(),
+}
+
+const mockUseAppStoreState = (state: Record<string, unknown>) => {
+	vi.mocked(useAppStore).mockImplementation(
+		((selector?: (s: Record<string, unknown>) => unknown) =>
+			selector ? selector(state) : state) as typeof useAppStore,
+	)
 }
 
 describe('ExecutionControls', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		// Reset to default state
-		vi.mocked(useAppStore).mockReturnValue({
+		mockUseAppStoreState({
 			...mockStore,
 			isRunning: false,
 			isPaused: false,
@@ -45,7 +41,7 @@ describe('ExecutionControls', () => {
 
 	describe('Initial State - No Code Loaded', () => {
 		beforeEach(() => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				isRunning: false,
 				isPaused: false,
@@ -60,26 +56,30 @@ describe('ExecutionControls', () => {
 			expect(screen.getByText('No Code Loaded')).toBeInTheDocument()
 		})
 
-		it('should disable play and step buttons when no steps are available', () => {
+		it('should show a 0 / 0 tick label', () => {
+			render(<ExecutionControls />)
+
+			expect(screen.getByText('Tick 0 / 0')).toBeInTheDocument()
+		})
+
+		it('should disable play, step and reset buttons when no steps are available', () => {
 			render(<ExecutionControls />)
 
 			expect(screen.getByRole('button', { name: /play/i })).toBeDisabled()
 			expect(screen.getByRole('button', { name: /step/i })).toBeDisabled()
+			expect(screen.getByRole('button', { name: /reset/i })).toBeDisabled()
 		})
 
-		it('should enable restart and reset buttons even when no steps are available', () => {
+		it('should disable the back button when nothing has run yet', () => {
 			render(<ExecutionControls />)
 
-			expect(
-				screen.getByRole('button', { name: /restart/i }),
-			).toBeEnabled()
-			expect(screen.getByRole('button', { name: /reset/i })).toBeEnabled()
+			expect(screen.getByRole('button', { name: /back/i })).toBeDisabled()
 		})
 	})
 
 	describe('Ready to Start State', () => {
 		beforeEach(() => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [
 					{
@@ -97,26 +97,24 @@ describe('ExecutionControls', () => {
 			expect(screen.getByText('Ready to Start')).toBeInTheDocument()
 		})
 
-		it('should enable play and step buttons when steps are available', () => {
+		it('should enable play, step and reset buttons when steps are available', () => {
 			render(<ExecutionControls />)
 
 			expect(screen.getByRole('button', { name: /play/i })).toBeEnabled()
 			expect(screen.getByRole('button', { name: /step/i })).toBeEnabled()
+			expect(screen.getByRole('button', { name: /reset/i })).toBeEnabled()
 		})
 
-		it('should show restart button with outline variant when not complete', () => {
+		it('should show a 0 / 1 tick label', () => {
 			render(<ExecutionControls />)
 
-			const restartButton = screen.getByRole('button', {
-				name: /restart/i,
-			})
-			expect(restartButton).toHaveClass('btn-outline')
+			expect(screen.getByText('Tick 0 / 1')).toBeInTheDocument()
 		})
 	})
 
 	describe('Running State', () => {
 		beforeEach(() => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				isRunning: true,
 				steps: [
@@ -131,7 +129,7 @@ describe('ExecutionControls', () => {
 						lineNumber: 2,
 					},
 				],
-				currentStep: 1, // Still has more steps to run
+				currentStep: 1,
 			})
 		})
 
@@ -141,15 +139,12 @@ describe('ExecutionControls', () => {
 			expect(screen.getByText('Running')).toBeInTheDocument()
 		})
 
-		it('should show pause button instead of play button when running', () => {
+		it('should show the play button labelled Pause when running', () => {
 			render(<ExecutionControls />)
 
 			expect(
 				screen.getByRole('button', { name: /pause/i }),
 			).toBeInTheDocument()
-			expect(
-				screen.queryByRole('button', { name: /play/i }),
-			).not.toBeInTheDocument()
 		})
 
 		it('should show running status indicator with proper class', () => {
@@ -165,7 +160,7 @@ describe('ExecutionControls', () => {
 
 	describe('Paused State', () => {
 		beforeEach(() => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				isPaused: true,
 				steps: [
@@ -180,7 +175,7 @@ describe('ExecutionControls', () => {
 						lineNumber: 2,
 					},
 				],
-				currentStep: 1, // Still has more steps to run
+				currentStep: 1,
 			})
 		})
 
@@ -190,7 +185,7 @@ describe('ExecutionControls', () => {
 			expect(screen.getByText('Paused')).toBeInTheDocument()
 		})
 
-		it('should show play button when paused', () => {
+		it('should show the play button labelled Play when paused', () => {
 			render(<ExecutionControls />)
 
 			expect(
@@ -211,7 +206,7 @@ describe('ExecutionControls', () => {
 
 	describe('Stopped State', () => {
 		beforeEach(() => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [
 					{
@@ -225,7 +220,7 @@ describe('ExecutionControls', () => {
 						lineNumber: 2,
 					},
 				],
-				currentStep: 1, // Started but not running, still has more steps
+				currentStep: 1,
 			})
 		})
 
@@ -235,17 +230,24 @@ describe('ExecutionControls', () => {
 			expect(screen.getByText('Stopped')).toBeInTheDocument()
 		})
 
-		it('should enable play and step buttons when stopped', () => {
+		it('should enable play, step and back buttons when stopped', () => {
 			render(<ExecutionControls />)
 
 			expect(screen.getByRole('button', { name: /play/i })).toBeEnabled()
 			expect(screen.getByRole('button', { name: /step/i })).toBeEnabled()
+			expect(screen.getByRole('button', { name: /back/i })).toBeEnabled()
+		})
+
+		it('should show a 1 / 2 tick label', () => {
+			render(<ExecutionControls />)
+
+			expect(screen.getByText('Tick 1 / 2')).toBeInTheDocument()
 		})
 	})
 
 	describe('Execution Complete State', () => {
 		beforeEach(() => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [
 					{
@@ -254,7 +256,7 @@ describe('ExecutionControls', () => {
 						lineNumber: 1,
 					},
 				],
-				currentStep: 1, // currentStep >= steps.length (1)
+				currentStep: 1,
 			})
 		})
 
@@ -264,20 +266,21 @@ describe('ExecutionControls', () => {
 			expect(screen.getByText('Execution Complete')).toBeInTheDocument()
 		})
 
-		it('should disable play and step buttons when execution is complete', () => {
+		it('should disable the step button but keep Replay enabled when execution is complete', () => {
 			render(<ExecutionControls />)
 
-			expect(screen.getByRole('button', { name: /play/i })).toBeDisabled()
+			expect(
+				screen.getByRole('button', { name: /replay/i }),
+			).toBeEnabled()
 			expect(screen.getByRole('button', { name: /step/i })).toBeDisabled()
 		})
 
-		it('should show restart button with primary variant when complete', () => {
+		it('should show the play button labelled Replay when complete', () => {
 			render(<ExecutionControls />)
 
-			const restartButton = screen.getByRole('button', {
-				name: /restart/i,
-			})
-			expect(restartButton).toHaveClass('btn-primary')
+			expect(
+				screen.getByRole('button', { name: /replay/i }),
+			).toBeInTheDocument()
 		})
 
 		it('should show complete status indicator with green background', () => {
@@ -295,7 +298,7 @@ describe('ExecutionControls', () => {
 		const user = userEvent.setup()
 
 		beforeEach(() => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [
 					{
@@ -304,10 +307,27 @@ describe('ExecutionControls', () => {
 						lineNumber: 1,
 					},
 				],
+				currentStep: 1,
 			})
 		})
 
 		it('should call play function when play button is clicked', async () => {
+			mockUseAppStoreState({
+				...mockStore,
+				steps: [
+					{
+						type: 'function-call',
+						description: 'Test step',
+						lineNumber: 1,
+					},
+					{
+						type: 'function-call',
+						description: 'Test step 2',
+						lineNumber: 2,
+					},
+				],
+				currentStep: 1,
+			})
 			render(<ExecutionControls />)
 
 			await user.click(screen.getByRole('button', { name: /play/i }))
@@ -315,17 +335,33 @@ describe('ExecutionControls', () => {
 		})
 
 		it('should call step function when step button is clicked', async () => {
+			mockUseAppStoreState({
+				...mockStore,
+				steps: [
+					{
+						type: 'function-call',
+						description: 'Test step',
+						lineNumber: 1,
+					},
+					{
+						type: 'function-call',
+						description: 'Test step 2',
+						lineNumber: 2,
+					},
+				],
+				currentStep: 0,
+			})
 			render(<ExecutionControls />)
 
 			await user.click(screen.getByRole('button', { name: /step/i }))
 			expect(mockStore.step).toHaveBeenCalledOnce()
 		})
 
-		it('should call restart function when restart button is clicked', async () => {
+		it('should call back function when back button is clicked', async () => {
 			render(<ExecutionControls />)
 
-			await user.click(screen.getByRole('button', { name: /restart/i }))
-			expect(mockStore.restart).toHaveBeenCalledOnce()
+			await user.click(screen.getByRole('button', { name: /back/i }))
+			expect(mockStore.back).toHaveBeenCalledOnce()
 		})
 
 		it('should call reset function when reset button is clicked', async () => {
@@ -336,7 +372,7 @@ describe('ExecutionControls', () => {
 		})
 
 		it('should call pause function when pause button is clicked during execution', async () => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				isRunning: true,
 				steps: [
@@ -357,7 +393,7 @@ describe('ExecutionControls', () => {
 
 	describe('Status Indicator Colors', () => {
 		it('should show blue indicator for "Ready to Start" state', () => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [
 					{
@@ -377,7 +413,7 @@ describe('ExecutionControls', () => {
 		})
 
 		it('should show yellow indicator for "Stopped" state', () => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [
 					{
@@ -391,7 +427,7 @@ describe('ExecutionControls', () => {
 						lineNumber: 2,
 					},
 				],
-				currentStep: 1, // Started but not complete
+				currentStep: 1,
 			})
 
 			render(<ExecutionControls />)
@@ -403,7 +439,7 @@ describe('ExecutionControls', () => {
 		})
 
 		it('should show gray indicator for "No Code Loaded" state', () => {
-			vi.mocked(useAppStore).mockReturnValue({
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [],
 				currentStep: 0,
@@ -418,11 +454,10 @@ describe('ExecutionControls', () => {
 		})
 	})
 
-	describe('Button Variants', () => {
-		it('should show secondary variant for pause button', () => {
-			vi.mocked(useAppStore).mockReturnValue({
+	describe('Progress bar', () => {
+		it('should render a full-width progress fill when execution is complete', () => {
+			mockUseAppStoreState({
 				...mockStore,
-				isRunning: true,
 				steps: [
 					{
 						type: 'function-call',
@@ -430,16 +465,17 @@ describe('ExecutionControls', () => {
 						lineNumber: 1,
 					},
 				],
+				currentStep: 1,
 			})
 
-			render(<ExecutionControls />)
+			const { container } = render(<ExecutionControls />)
 
-			const pauseButton = screen.getByRole('button', { name: /pause/i })
-			expect(pauseButton).toHaveClass('btn-secondary')
+			const fill = container.querySelector('.progress-fill')
+			expect(fill).toHaveStyle('width: 100%')
 		})
 
-		it('should show outline variant for step and reset buttons', () => {
-			vi.mocked(useAppStore).mockReturnValue({
+		it('should render an empty progress fill before anything has run', () => {
+			mockUseAppStoreState({
 				...mockStore,
 				steps: [
 					{
@@ -448,16 +484,13 @@ describe('ExecutionControls', () => {
 						lineNumber: 1,
 					},
 				],
+				currentStep: 0,
 			})
 
-			render(<ExecutionControls />)
+			const { container } = render(<ExecutionControls />)
 
-			expect(screen.getByRole('button', { name: /step/i })).toHaveClass(
-				'btn-outline',
-			)
-			expect(screen.getByRole('button', { name: /reset/i })).toHaveClass(
-				'btn-outline',
-			)
+			const fill = container.querySelector('.progress-fill')
+			expect(fill).toHaveStyle('width: 0%')
 		})
 	})
 })

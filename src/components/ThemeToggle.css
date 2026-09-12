@@ -1,0 +1,92 @@
+.theme-toggle {
+	position: relative;
+}
+
+.theme-toggle-trigger {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--color-text-faint);
+	font-family: var(--font-mono);
+	font-size: 0.64rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	white-space: nowrap;
+	cursor: pointer;
+	border-bottom: 1px solid transparent;
+	transition: color 0.15s var(--ease-standard),
+		border-color 0.15s var(--ease-standard);
+}
+
+.theme-toggle-trigger:hover,
+.theme-toggle-trigger[aria-expanded='true'] {
+	color: var(--color-brand);
+	border-bottom-color: var(--color-brand);
+}
+
+.theme-toggle-dot {
+	width: 6px;
+	height: 6px;
+	flex: none;
+	border-radius: 999px;
+	background: var(--color-text-faint);
+}
+
+.theme-toggle-dot[data-resolved='dark'] {
+	background: #62c5ee;
+}
+
+.theme-toggle-dot[data-resolved='light'] {
+	background: #edbb00;
+}
+
+.theme-toggle-menu {
+	position: absolute;
+	top: calc(100% + 10px);
+	right: 0;
+	z-index: 20;
+	margin: 0;
+	padding: var(--space-1);
+	list-style: none;
+	width: max-content;
+	min-width: 168px;
+	max-width: calc(100vw - 2rem);
+	background: var(--color-surface-raised);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-md);
+}
+
+.theme-toggle-option {
+	display: block;
+	width: 100%;
+	text-align: left;
+	background: none;
+	border: none;
+	border-left: 2px solid transparent;
+	padding: 0.4rem 0.55rem;
+	color: var(--color-text-muted);
+	font-family: var(--font-mono);
+	font-size: 0.66rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	white-space: nowrap;
+	cursor: pointer;
+	border-radius: var(--radius-sm);
+	transition: color 0.15s var(--ease-standard),
+		background-color 0.15s var(--ease-standard),
+		border-color 0.15s var(--ease-standard);
+}
+
+.theme-toggle-option:hover {
+	color: var(--color-text);
+	background: var(--color-surface);
+}
+
+.theme-toggle-option.active {
+	color: var(--color-brand);
+	border-left-color: var(--color-brand);
+}

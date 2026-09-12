@@ -3,18 +3,8 @@ import { render, screen } from '@testing-library/react'
 import { ExecutionControls } from '../ExecutionControls'
 import { useAppStore } from '../../store'
 
-// Mock the store
 vi.mock('../../store', () => ({
 	useAppStore: vi.fn(),
-}))
-
-// Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-	Play: () => <div data-testid="play-icon" />,
-	Pause: () => <div data-testid="pause-icon" />,
-	SkipForward: () => <div data-testid="skip-forward-icon" />,
-	RotateCcw: () => <div data-testid="rotate-ccw-icon" />,
-	Square: () => <div data-testid="square-icon" />,
 }))
 
 const mockStore = {
@@ -25,8 +15,15 @@ const mockStore = {
 	play: vi.fn(),
 	pause: vi.fn(),
 	step: vi.fn(),
+	back: vi.fn(),
 	reset: vi.fn(),
-	restart: vi.fn(),
+}
+
+const mockUseAppStoreState = (state: Record<string, unknown>) => {
+	vi.mocked(useAppStore).mockImplementation(
+		((selector?: (s: Record<string, unknown>) => unknown) =>
+			selector ? selector(state) : state) as typeof useAppStore,
+	)
 }
 
 describe('ExecutionControls - Simple Tests', () => {
@@ -35,7 +32,7 @@ describe('ExecutionControls - Simple Tests', () => {
 	})
 
 	it('should show "No Code Loaded" when steps array is empty', () => {
-		vi.mocked(useAppStore).mockReturnValue({
+		mockUseAppStoreState({
 			...mockStore,
 			isRunning: false,
 			isPaused: false,
@@ -45,14 +42,11 @@ describe('ExecutionControls - Simple Tests', () => {
 
 		render(<ExecutionControls />)
 
-		// Debug: let's see what's actually rendered
-		screen.debug()
-
 		expect(screen.getByText('No Code Loaded')).toBeInTheDocument()
 	})
 
 	it('should show "Ready to Start" when steps are available but not started', () => {
-		vi.mocked(useAppStore).mockReturnValue({
+		mockUseAppStoreState({
 			...mockStore,
 			isRunning: false,
 			isPaused: false,
@@ -72,7 +66,7 @@ describe('ExecutionControls - Simple Tests', () => {
 	})
 
 	it('should show "Execution Complete" when currentStep equals steps length', () => {
-		vi.mocked(useAppStore).mockReturnValue({
+		mockUseAppStoreState({
 			...mockStore,
 			isRunning: false,
 			isPaused: false,

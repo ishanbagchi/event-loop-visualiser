@@ -3,7 +3,6 @@ import { useAppStore } from '../index'
 
 describe('App Store', () => {
 	beforeEach(() => {
-		// Reset store state before each test
 		useAppStore.getState().reset()
 	})
 
@@ -15,7 +14,7 @@ describe('App Store', () => {
 			expect(state.callbackQueue).toEqual([])
 			expect(state.webAPIs).toEqual([])
 			expect(state.currentStep).toBe(0)
-			expect(state.steps).toEqual([])
+			expect(state.steps.length).toBeGreaterThan(0)
 			expect(state.isRunning).toBe(false)
 			expect(state.isPaused).toBe(false)
 			expect(state.currentLine).toBeUndefined()
@@ -55,11 +54,9 @@ describe('App Store', () => {
 		it('should reset state correctly', () => {
 			const store = useAppStore.getState()
 
-			// Set some state
 			store.setCode('test code')
 			store.addConsoleLog('test message')
 
-			// Reset
 			store.reset()
 
 			const newState = useAppStore.getState()

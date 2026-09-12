@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+	<rect width="32" height="32" fill="#141312" />
+	<rect x="4" y="4" width="16" height="16" fill="#62c5ee" />
+	<rect x="12" y="12" width="16" height="16" fill="#ff90b1" style="mix-blend-mode: screen" />
+</svg>

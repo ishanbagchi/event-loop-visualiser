@@ -1,30 +1,38 @@
 import { useAppStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 
 export const SampleSelector = () => {
-	const { samples, currentSample, loadSample } = useAppStore()
+	const { samples, currentSample, loadSample } = useAppStore(
+		useShallow((state) => ({
+			samples: state.samples,
+			currentSample: state.currentSample,
+			loadSample: state.loadSample,
+		})),
+	)
 
 	return (
 		<div className="sample-selector">
 			<div className="sample-selector-header">
-				<h3>Sample Code</h3>
+				<h3>Load a specimen</h3>
 			</div>
 			<div className="sample-selector-content">
-				<select
-					value={currentSample?.id || ''}
-					onChange={(e) => {
-						const sample = samples.find(
-							(s) => s.id === e.target.value,
-						)
-						if (sample) loadSample(sample)
-					}}
-					className="sample-dropdown"
-				>
+				<div className="sample-pills">
 					{samples.map((sample) => (
-						<option key={sample.id} value={sample.id}>
-							{sample.title} - {sample.description}
-						</option>
+						<button
+							key={sample.id}
+							type="button"
+							onClick={() => loadSample(sample)}
+							title={sample.description}
+							className={`sample-pill${
+								sample.id === currentSample?.id
+									? ' active'
+									: ''
+							}`}
+						>
+							{sample.title}
+						</button>
 					))}
-				</select>
+				</div>
 			</div>
 		</div>
 	)

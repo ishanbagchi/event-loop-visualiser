@@ -1,68 +1,193 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+	/*
+	 * Palette tokens live per-[data-theme] below so new palettes are a
+	 * one-block addition (see src/theme/themes.ts for the registry that
+	 * drives the toggle UI). This root block only holds theme-independent
+	 * tokens plus a dark fallback for the instant before the anti-FOUC
+	 * script in index.html sets [data-theme].
+	 */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.5rem;
+	--space-6: 2rem;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+	--radius-sm: 2px;
+	--radius-md: 3px;
+	--radius-lg: 5px;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	--font-mono: 'Source Code Pro', 'SF Mono', 'JetBrains Mono', 'Fira Code',
+		Menlo, Consolas, 'Ubuntu Mono', monospace;
+	--font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+
+	--ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+	font-family: var(--font-serif);
+	line-height: 1.5;
+	font-weight: 400;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+:root,
+[data-theme='dark'] {
+	color-scheme: dark;
+
+	--color-brand: #62c5ee;
+	--color-brand-strong: #38a6cf;
+
+	--color-bg: #141312;
+	--color-bg-raised: #1c1b1a;
+	--color-surface: #1c1b1a;
+	--color-surface-raised: #242220;
+	--color-border: rgba(243, 242, 242, 0.16);
+	--color-border-strong: rgba(243, 242, 242, 0.32);
+
+	--color-text: #f3f2f2;
+	--color-text-muted: #cfcac5;
+	--color-text-faint: #8a8580;
+
+	--color-stack: #62c5ee;
+	--color-stack-bg: rgba(98, 197, 238, 0.14);
+	--color-timer: #edbb00;
+	--color-timer-bg: rgba(237, 187, 0, 0.14);
+	--color-interval: #b98cf2;
+	--color-interval-bg: rgba(185, 140, 242, 0.14);
+	--color-promise: #ff90b1;
+	--color-promise-bg: rgba(255, 144, 177, 0.14);
+	--color-error: #ff6b6b;
+	--color-error-bg: rgba(255, 107, 107, 0.14);
+
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+	--shadow-glow: 0 0 0 1px rgba(98, 197, 238, 0.35);
+
+	--color-scrollbar-thumb: #45423f;
+	--color-link-hover: #99e0ff;
+
+	/* The code editor / console read as a recessed "well" - darker than
+	   the surrounding surface - in both themes, so this is the dark
+	   theme's own darker-than-surface tone, not a fixed constant. */
+	--color-well-bg: #0e0d0c;
+	--color-well-bg-hover: #17201f;
+	--color-well-text: var(--color-text);
+	--color-well-text-faint: var(--color-text-faint);
+	--color-well-border: rgba(243, 242, 242, 0.12);
+	--color-well-accent: var(--color-brand);
+	--color-well-accent-hover: #99e0ff;
+	--color-well-on-accent: #0a2430;
+	--color-well-stack: var(--color-stack);
+	--color-well-timer: var(--color-timer);
+	--color-well-interval: var(--color-interval);
+	--color-well-promise: var(--color-promise);
+	--color-well-error: var(--color-error);
+}
+
+[data-theme='light'] {
+	color-scheme: light;
+
+	--color-brand: #0e7ea6;
+	--color-brand-strong: #0a5f80;
+
+	--color-bg: #f3efe6;
+	--color-bg-raised: #ece4d3;
+	--color-surface: #ece4d3;
+	--color-surface-raised: #e2d8c3;
+	--color-border: rgba(28, 27, 26, 0.14);
+	--color-border-strong: rgba(28, 27, 26, 0.28);
+
+	--color-text: #1c1b1a;
+	--color-text-muted: #4a4642;
+	--color-text-faint: #756f68;
+
+	--color-stack: #0e7ea6;
+	--color-stack-bg: rgba(14, 126, 166, 0.12);
+	--color-timer: #8a6a00;
+	--color-timer-bg: rgba(138, 106, 0, 0.12);
+	--color-interval: #6b3fb8;
+	--color-interval-bg: rgba(107, 63, 184, 0.12);
+	--color-promise: #b8265a;
+	--color-promise-bg: rgba(184, 38, 90, 0.12);
+	--color-error: #b3261e;
+	--color-error-bg: rgba(179, 38, 30, 0.12);
+
+	--shadow-sm: 0 1px 2px rgba(28, 27, 26, 0.12);
+	--shadow-md: 0 8px 24px rgba(28, 27, 26, 0.16);
+	--shadow-glow: 0 0 0 1px rgba(14, 126, 166, 0.3);
+
+	--color-scrollbar-thumb: #c9bfa8;
+	--color-link-hover: #0a5f80;
+
+	/* Recessed "well" tone for the code editor / console - a shade darker
+	   than the paper surface, not the dark theme's near-black. */
+	--color-well-bg: #e3dac4;
+	--color-well-bg-hover: #d9cdb0;
+	--color-well-text: var(--color-text);
+	--color-well-text-faint: var(--color-text-faint);
+	--color-well-border: rgba(28, 27, 26, 0.14);
+	--color-well-accent: var(--color-brand);
+	--color-well-accent-hover: var(--color-brand-strong);
+	--color-well-on-accent: #f3efe6;
+	--color-well-stack: var(--color-stack);
+	--color-well-timer: var(--color-timer);
+	--color-well-interval: var(--color-interval);
+	--color-well-promise: var(--color-promise);
+	--color-well-error: var(--color-error);
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100vh;
+	background-color: var(--color-bg);
+	color: var(--color-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--font-serif);
+	font-weight: 600;
+	letter-spacing: -0.015em;
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+	color: var(--color-brand);
+	text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+	color: var(--color-link-hover);
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+:focus-visible {
+	outline: 2px solid var(--color-brand);
+	outline-offset: 2px;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+*::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
 }
-button:hover {
-  border-color: #646cff;
+*::-webkit-scrollbar-thumb {
+	background-color: var(--color-scrollbar-thumb);
+	border-radius: 999px;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+*::-webkit-scrollbar-track {
+	background: transparent;
 }
