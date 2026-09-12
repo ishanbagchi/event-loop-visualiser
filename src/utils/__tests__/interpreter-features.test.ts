@@ -81,4 +81,24 @@ Promise.all([Promise.resolve(1), Promise.resolve(2), 3]).then(vals => console.lo
 `),
 		).toEqual(['1,2,3'])
 	})
+
+	it('private class fields and methods', () => {
+		expect(
+			run(`
+class Counter {
+  #count = 0
+  #step
+  constructor(step) { this.#step = step }
+  #increment() { this.#count += this.#step }
+  bump() { this.#increment(); return this.#count }
+  static isCounter(obj) { return #count in obj }
+}
+const c = new Counter(2)
+console.log(c.bump())
+console.log(c.bump())
+console.log(Counter.isCounter(c))
+console.log(Counter.isCounter({}))
+`),
+		).toEqual(['2', '4', 'true', 'false'])
+	})
 })

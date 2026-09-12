@@ -18,7 +18,7 @@ const highlightSegments = (code: string): HighlightSegment[] => {
 
 	try {
 		const tokens = [
-			...acorn.tokenizer(code, { ecmaVersion: 2020, onComment: comments }),
+			...acorn.tokenizer(code, { ecmaVersion: 2022, onComment: comments }),
 		]
 		comments.forEach((c) =>
 			ranges.push({ start: c.start, end: c.end, kind: 'comment' }),

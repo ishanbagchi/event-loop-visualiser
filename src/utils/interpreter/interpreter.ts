@@ -56,6 +56,13 @@ const isControlSignal = (err: unknown): boolean =>
 const MAX_FUNCTION_CALLS = 5000
 const INTERVAL_REPEAT_COUNT = 3
 
+const memberPropertyKey = (
+	property: acorn.Expression | acorn.PrivateIdentifier,
+): string =>
+	property.type === 'PrivateIdentifier'
+		? `#${property.name}`
+		: (property as acorn.Identifier).name
+
 type ExecutionContext = 'synchronous' | 'microtask queue' | 'callback queue'
 
 /** Sentinel returned when an optional-chaining link (`?.`) short-circuits;
@@ -674,7 +681,7 @@ export class Interpreter {
 				? String(
 						yield* this.evaluate(target.property as acorn.Expression, scope),
 					)
-				: (target.property as acorn.Identifier).name
+				: memberPropertyKey(target.property)
 			if (isInterpretedClass(objectValue)) objectValue.staticProps[key] = value
 			else (objectValue as Record<string, Value>)[key] = value
 			return
@@ -837,7 +844,8 @@ export class Interpreter {
 		scope: Scope,
 	): Gen<Value> {
 		if (node.left.type === 'PrivateIdentifier') {
-			throw new InterpreterError('Unsupported syntax: private field')
+			const obj = yield* this.evaluate(node.right as acorn.Expression, scope)
+			return `#${node.left.name}` in (obj as object)
 		}
 		if (node.operator === 'in') {
 			const key = yield* this.evaluate(node.left, scope)
@@ -968,7 +976,7 @@ export class Interpreter {
 									scope,
 								),
 							)
-						: (node.argument.property as acorn.Identifier).name
+						: memberPropertyKey(node.argument.property)
 					delete (objectValue as Record<string, Value>)[key]
 				}
 			}
@@ -1016,7 +1024,7 @@ export class Interpreter {
 							scope,
 						),
 					)
-				: (node.argument.property as acorn.Identifier).name
+				: memberPropertyKey(node.argument.property)
 			const bag = isInterpretedClass(objectValue)
 				? objectValue.staticProps
 				: (objectValue as Record<string, Value>)
@@ -1114,7 +1122,7 @@ export class Interpreter {
 			const parentProto = Object.getPrototypeOf(frame.cls.prototype)
 			const key = node.computed
 				? String(yield* this.evaluate(node.property as acorn.Expression, scope))
-				: (node.property as acorn.Identifier).name
+				: memberPropertyKey(node.property)
 			return parentProto
 				? (parentProto as Record<string, Value>)[key]
 				: undefined
@@ -1131,7 +1139,7 @@ export class Interpreter {
 		}
 		const key = node.computed
 			? String(yield* this.evaluate(node.property as acorn.Expression, scope))
-			: (node.property as acorn.Identifier).name
+			: memberPropertyKey(node.property)
 		if (isInterpretedClass(objectValue))
 			return this.getStaticMember(objectValue, key)
 		return (objectValue as Record<string, Value>)[key]
@@ -1511,7 +1519,7 @@ export class Interpreter {
 				? String(
 						yield* this.evaluate(callee.property as acorn.Expression, scope),
 					)
-				: (callee.property as acorn.Identifier).name
+				: memberPropertyKey(callee.property)
 
 			if (objectValue instanceof SimulatedPromise) {
 				const args = yield* this.evaluateArgs(node.arguments, scope)
@@ -1605,6 +1613,7 @@ export class Interpreter {
 			)
 		}
 		if (node.key.type === 'Identifier') return node.key.name
+		if (node.key.type === 'PrivateIdentifier') return `#${node.key.name}`
 		if (node.key.type === 'Literal') return String(node.key.value)
 		throw new InterpreterError('Unsupported syntax: class member key')
 	}
