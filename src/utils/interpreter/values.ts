@@ -10,6 +10,7 @@ export interface InterpretedFunction {
 	closure: Scope
 	isArrow: boolean
 	isAsync: boolean
+	isGenerator: boolean
 	homeClass?: InterpretedClass
 }
 
@@ -20,6 +21,23 @@ export function isInterpretedFunction(
 		typeof value === 'object' &&
 		value !== null &&
 		(value as { __interpretedFunction?: true }).__interpretedFunction === true
+	)
+}
+
+export interface InterpretedGenerator {
+	readonly __interpretedGenerator: true
+	name: string
+	gen: Generator<Value, Value, Value> | null
+	done: boolean
+}
+
+export function isInterpretedGenerator(
+	value: unknown,
+): value is InterpretedGenerator {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		(value as { __interpretedGenerator?: true }).__interpretedGenerator === true
 	)
 }
 
@@ -81,6 +99,9 @@ export function stringifyValue(value: Value): string {
 	}
 	if (isInterpretedClass(value)) {
 		return `[class ${value.name || 'anonymous'}]`
+	}
+	if (isInterpretedGenerator(value)) {
+		return 'Object [Generator] {}'
 	}
 	if (value instanceof SimulatedPromise) {
 		if (value.state === 'pending') return 'Promise { <pending> }'

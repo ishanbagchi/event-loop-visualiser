@@ -7,11 +7,13 @@ import { Trace } from './trace'
 import {
 	isInterpretedClass,
 	isInterpretedFunction,
+	isInterpretedGenerator,
 	registerClassName,
 	stringifyValue,
 	type ClassField,
 	type InterpretedClass,
 	type InterpretedFunction,
+	type InterpretedGenerator,
 } from './values'
 
 class ReturnSignal extends Error {
@@ -431,6 +433,7 @@ export class Interpreter {
 		if (Array.isArray(value)) return value
 		if (typeof value === 'string') return value
 		if (value instanceof Map || value instanceof Set) return value
+		if (isInterpretedGenerator(value)) return this.generatorIterable(value)
 		if (
 			value &&
 			typeof value === 'object' &&
@@ -439,6 +442,22 @@ export class Interpreter {
 			return value as Iterable<Value>
 		}
 		throw new InterpreterError(`${stringifyValue(value)} is not iterable`)
+	}
+
+	private generatorIterable(genObj: InterpretedGenerator): Iterable<Value> {
+		return {
+			[Symbol.iterator]: () => ({
+				next: (v?: Value) => {
+					const { value, done } = this.advanceGenerator(
+						genObj,
+						v,
+						'next',
+						undefined,
+					)
+					return { value, done }
+				},
+			}),
+		}
 	}
 
 	private *bindForTarget(
@@ -527,35 +546,24 @@ export class Interpreter {
 
 	private *executeTry(node: acorn.TryStatement, scope: Scope): Gen<void> {
 		try {
-			yield* this.execute(node.block, scope.child())
-		} catch (err) {
-			if (isControlSignal(err)) {
-				if (node.finalizer) yield* this.execute(node.finalizer, scope.child())
-				throw err
-			}
-			if (!node.handler) {
-				if (node.finalizer) yield* this.execute(node.finalizer, scope.child())
-				throw err
-			}
-			const catchScope = scope.child()
-			if (node.handler.param) {
-				yield* this.bindPattern(
-					node.handler.param,
-					this.errorToValue(err),
-					catchScope,
-					'let',
-				)
-			}
 			try {
+				yield* this.execute(node.block, scope.child())
+			} catch (err) {
+				if (isControlSignal(err) || !node.handler) throw err
+				const catchScope = scope.child()
+				if (node.handler.param) {
+					yield* this.bindPattern(
+						node.handler.param,
+						this.errorToValue(err),
+						catchScope,
+						'let',
+					)
+				}
 				yield* this.execute(node.handler.body, catchScope)
-			} catch (err2) {
-				if (node.finalizer) yield* this.execute(node.finalizer, scope.child())
-				throw err2
 			}
+		} finally {
 			if (node.finalizer) yield* this.execute(node.finalizer, scope.child())
-			return
 		}
-		if (node.finalizer) yield* this.execute(node.finalizer, scope.child())
 	}
 
 	// ---------------------------------------------------------------------
@@ -565,6 +573,9 @@ export class Interpreter {
 	private toArrayForDestructuring(value: Value): Value[] {
 		if (Array.isArray(value)) return value
 		if (typeof value === 'string') return [...value]
+		if (isInterpretedGenerator(value)) {
+			return [...this.generatorIterable(value)]
+		}
 		if (
 			value &&
 			typeof value === 'object' &&
@@ -756,6 +767,19 @@ export class Interpreter {
 			case 'AwaitExpression': {
 				const awaited = yield* this.evaluate(node.argument, scope)
 				return yield awaited
+			}
+			case 'YieldExpression': {
+				const value = node.argument
+					? yield* this.evaluate(node.argument, scope)
+					: undefined
+				if (node.delegate) {
+					let sent: Value = undefined
+					for (const item of this.toIterable(value)) {
+						sent = yield item
+					}
+					return sent
+				}
+				return yield value
 			}
 			default:
 				throw new InterpreterError(`Unsupported syntax: ${node.type}`)
@@ -1166,9 +1190,10 @@ export class Interpreter {
 		closure: Scope,
 		isArrow: boolean,
 	): InterpretedFunction {
-		if ('generator' in node && node.generator) {
+		const isGenerator = 'generator' in node && Boolean(node.generator)
+		if (Boolean(node.async) && isGenerator) {
 			throw new InterpreterError(
-				'Unsupported syntax: generator functions (function*/yield)',
+				'Unsupported syntax: async generator functions',
 			)
 		}
 		const fn: InterpretedFunction = {
@@ -1179,6 +1204,7 @@ export class Interpreter {
 			closure,
 			isArrow,
 			isAsync: Boolean(node.async),
+			isGenerator,
 		}
 		if (!isArrow && node.id) {
 			const selfScope = closure.child()
@@ -1312,6 +1338,10 @@ export class Interpreter {
 		}
 		const name = displayName || fn.name || 'anonymous'
 
+		if (fn.isGenerator) {
+			return this.makeGeneratorObject(fn, args, thisArg, line, name)
+		}
+
 		if (fn.isAsync) {
 			return this.runAsyncFunction(fn, args, thisArg, line, name)
 		}
@@ -1424,6 +1454,79 @@ export class Interpreter {
 		return resultPromise
 	}
 
+	private makeGeneratorObject(
+		fn: InterpretedFunction,
+		args: Value[],
+		thisArg: Value,
+		line: number | undefined,
+		name: string,
+	): InterpretedGenerator {
+		const gen = this.invokeFunctionBody(fn, args, thisArg, line, name)
+		return { __interpretedGenerator: true, name, gen, done: false }
+	}
+
+	private advanceGenerator(
+		genObj: InterpretedGenerator,
+		input: Value,
+		mode: 'next' | 'throw' | 'return',
+		line: number | undefined,
+	): { value: Value; done: boolean } {
+		if (genObj.done || !genObj.gen) {
+			return { value: mode === 'return' ? input : undefined, done: true }
+		}
+		const name = genObj.name || 'anonymous'
+		this.trace.pushCall(name, line)
+		this.trace.push(
+			'function-call',
+			mode === 'next'
+				? `Resumed ${name}() at yield - added to call stack`
+				: mode === 'throw'
+					? `Threw into ${name}() - added to call stack`
+					: `Returned into ${name}() - added to call stack`,
+			line,
+		)
+
+		let res: IteratorResult<Value, Value>
+		try {
+			res =
+				mode === 'throw'
+					? genObj.gen.throw(new ThrownValue(input))
+					: mode === 'return'
+						? (genObj.gen.return(input) as IteratorResult<Value, Value>)
+						: genObj.gen.next(input)
+		} catch (err) {
+			genObj.done = true
+			genObj.gen = null
+			this.trace.popCall()
+			this.trace.push(
+				'function-return',
+				`${name}() threw - removed from call stack`,
+				line,
+			)
+			throw err instanceof ThrownValue
+				? err
+				: new ThrownValue(this.errorToValue(err))
+		}
+
+		this.trace.popCall()
+		if (res.done) {
+			genObj.done = true
+			genObj.gen = null
+			this.trace.push(
+				'function-return',
+				`${name}() completed - removed from call stack`,
+				line,
+			)
+		} else {
+			this.trace.push(
+				'function-return',
+				`${name}() suspended at yield - removed from call stack`,
+				line,
+			)
+		}
+		return { value: res.value, done: res.done ?? false }
+	}
+
 	private *evaluateArgs(
 		args: Array<acorn.Expression | acorn.SpreadElement>,
 		scope: Scope,
@@ -1531,6 +1634,26 @@ export class Interpreter {
 					return this.builtinFinally(objectValue, args[0], line)
 				throw new InterpreterError(
 					`Unsupported syntax: Promise.${propertyName}()`,
+				)
+			}
+
+			if (isInterpretedGenerator(objectValue)) {
+				const args = yield* this.evaluateArgs(node.arguments, scope)
+				if (
+					propertyName === 'next' ||
+					propertyName === 'throw' ||
+					propertyName === 'return'
+				) {
+					const { value, done } = this.advanceGenerator(
+						objectValue,
+						args[0],
+						propertyName,
+						line,
+					)
+					return { value, done }
+				}
+				throw new InterpreterError(
+					`Unsupported syntax: generator.${propertyName}()`,
 				)
 			}
 

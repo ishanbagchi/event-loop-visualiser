@@ -136,7 +136,8 @@ first();`,
 	{
 		id: 'array-destructuring',
 		title: 'Array Destructuring in a Loop',
-		description: 'for...of over an array of pairs, destructured into named variables',
+		description:
+			'for...of over an array of pairs, destructured into named variables',
 		category: 'loops',
 		code: `const pairs = [[1, 2], [3, 4], [5, 6]];
 
@@ -184,6 +185,41 @@ dog.speak();`,
 console.log('Start');
 fetchData().then(r => console.log('Done:', r));
 console.log('End');`,
+	},
+	{
+		id: 'basic-generator',
+		title: 'Generators',
+		description:
+			'A generator function pauses at each `yield` and only resumes when `.next()` is called explicitly',
+		category: 'generators',
+		code: `function* countUp() {
+  console.log('start');
+  yield 1;
+  console.log('middle');
+  yield 2;
+  console.log('end');
+}
+
+const iterator = countUp();
+console.log(iterator.next().value);
+console.log(iterator.next().value);
+console.log(iterator.next().done);`,
+	},
+	{
+		id: 'generator-for-of',
+		title: 'Iterating a Generator',
+		description:
+			'`for...of` drives a generator with repeated `.next()` calls until it reports done',
+		category: 'generators',
+		code: `function* range(n) {
+  for (let i = 0; i < n; i++) {
+    yield i;
+  }
+}
+
+for (const n of range(3)) {
+  console.log(n);
+}`,
 	},
 ]
 

@@ -11,6 +11,7 @@ const CATEGORY_LABELS: Record<CodeSample['category'], string> = {
 	loops: 'Loops',
 	classes: 'Classes',
 	events: 'Events',
+	generators: 'Generators',
 }
 
 export const SampleSelector = () => {
@@ -51,7 +52,9 @@ export const SampleSelector = () => {
 					placeholder="Choose a specimen…"
 				/>
 				{currentSample && (
-					<p className="sample-select-description">{currentSample.description}</p>
+					<p className="sample-select-description">
+						{currentSample.description}
+					</p>
 				)}
 			</div>
 		</div>

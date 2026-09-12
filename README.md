@@ -33,7 +33,7 @@ An interactive, browser-based tool that helps developers understand how the Java
 
 ### Not yet supported
 
-The interpreter is a real (but intentionally small) implementation, not a full JS engine. Generator functions (`function*`/`yield`) and private class fields (`#field`) aren't implemented yet — code using them surfaces a visible error step instead of silently doing the wrong thing. `async`/`await`, loops (`for`/`while`/`for...of`/`for...in`), classes, and destructuring are all supported. See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for the current list.
+The interpreter is a real (but intentionally small) implementation, not a full JS engine. `async function*`/`for await...of` aren't implemented yet — code using them surfaces a visible error step instead of silently doing the wrong thing. `async`/`await`, generator functions (`function*`/`yield`, `yield*`), loops (`for`/`while`/`for...of`/`for...in`), classes, private class fields (`#field`), and destructuring are all supported. See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for the current list.
 
 ## 🛠 Tech Stack
 

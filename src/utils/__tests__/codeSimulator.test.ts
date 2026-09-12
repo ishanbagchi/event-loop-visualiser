@@ -344,6 +344,45 @@ console.log('sync')
 		})
 	})
 
+	describe('generators', () => {
+		it('pauses at yield and resumes only on next()', () => {
+			const code = `
+function* counter() {
+  console.log('a')
+  yield 1
+  console.log('b')
+  yield 2
+  console.log('c')
+}
+const it = counter()
+console.log('before')
+it.next()
+console.log('between')
+it.next()
+it.next()
+      `
+			const steps = simulator.simulateCode(code)
+			const messages = steps.flatMap(
+				(step) => step.consoleLogs?.map((log) => log.message) ?? [],
+			)
+			expect(messages).toEqual(['before', 'a', 'between', 'b', 'c'])
+		})
+
+		it('iterates a generator with for...of', () => {
+			const code = `
+function* range(n) {
+  for (let i = 0; i < n; i++) yield i
+}
+for (const n of range(3)) console.log(n)
+      `
+			const steps = simulator.simulateCode(code)
+			const messages = steps.flatMap(
+				(step) => step.consoleLogs?.map((log) => log.message) ?? [],
+			)
+			expect(messages).toEqual(['0', '1', '2'])
+		})
+	})
+
 	describe('Destructuring and spread', () => {
 		it('destructures arrays/objects and spreads into calls', () => {
 			const code = `
@@ -362,7 +401,7 @@ console.log(Math.max(...[4, 9, 2]))
 
 	describe('Unsupported syntax', () => {
 		it('surfaces a visible error step instead of silently doing nothing', () => {
-			const code = `console.log('before')\nconst gen = function*() { yield 1 }\nconsole.log('after')`
+			const code = `console.log('before')\nconst gen = async function*() { yield 1 }\nconsole.log('after')`
 			const steps = simulator.simulateCode(code)
 
 			const errorStep = steps.find((step) => step.type === 'error')
